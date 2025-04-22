@@ -14,7 +14,7 @@ occ_high(agent) = agent.occupied_units[3]
 ##Calculating Transaction Characteristics
 function moved(model, cat)
     count = 0
-    cat_ids = [id for id in allids(model) if model[id] isa HHAgent && model[id].bg_id >= 1 && model[id].group == cat]
+    cat_ids = [id for id in allids(model) if model[id] isa HHAgent && model[id].bg_id >= 1 && model[id].occ_cat == cat]
     for id in cat_ids
         count += model[id].year_of_residence == model.tick ? 1.0 : 0.0
     end

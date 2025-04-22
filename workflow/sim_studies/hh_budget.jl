@@ -7,36 +7,26 @@ Pkg.instantiate()
 include(joinpath(dirname(@__DIR__), "src", "config_parallel.jl"))
 
 ### For cat penalty
-@everywhere function phil_budg(; house_budget_mode=house_budget_mode, house_budget_perc=house_budget_perc, no_of_years=no_of_years, start_year=start_year, seed=seed)
-    util_coef = Dict(1=> [0, 600000, 130553, 128990, 154887, 72443], 
-                2=> [0, 600000, 130553, 128990, 154887, 72443], 
-                3=> [0, 600000, 130553, 128990, 154887, 72443]
-    )
-    
-    model = PhilSim(phil_bg, phil_cbsa_base_pop, synth_flood_record;no_of_years=Int(no_of_years), start_year=Int(start_year), perc_growth=0.01, flood_coefficient=-50000.0, 
-             risk_averse=0.5, flood_mem=10, base_move=0.025, build_inc_perc=0.10, price_inc_perc=0.10, 
-             penalty=1000.0, util_coef=util_coef, seed=Int(seed), house_budget_mode=house_budget_mode, house_budget_perc=house_budget_perc
-    )
-             
-            
+@everywhere function phil_budg(; flood_rec = synth_flood_record, house_budget_mode=house_budget_mode, house_budget_perc=house_budget_perc, no_of_years=no_of_years, start_year=start_year, seed=seed)
+    model = phil_model(;flood_rec = flood_rec, no_of_years=Int(no_of_years), start_year=Int(start_year), house_budget_mode=house_budget_mode, house_budget_perc=house_budget_perc, seed=seed)      
     return model
 end
 
 budg_params = Dict(
     :house_budget_mode=>"perc",
-    :house_budget_perc=>collect(range(0.1,0.6,step=0.05)),
+    :house_budget_perc=>collect(range(0.5,6,step=0.5)),
     :no_of_years=>39,
     :start_year=>1981, 
     :seed=>1500
 )
 
-adata = [(hh_low, sum, HH), (hh_med, sum, HH), (hh_high, sum, HH) , (occ_low, sum, BG), (occ_med, sum, BG), (occ_high, sum, BG)]
-
-adf_budg,_ = paramscan(budg_params, phil_budg; parallel=true, showprogress=true, adata, n=39)
+adf_budg,mdf_budget = paramscan(budg_params, phil_budg; parallel=true, showprogress=true, adata=simul_adata, mdata=simul_mdata, n=39)
 
 using Plots
 using ColorSchemes
 include("sim_functions.jl")
 
-budg_plots = simul_plot(adf_budg, :house_budget_perc; leg = :outertopright)
-plot(budg_plots..., layout=(3, 2), size = (1100, 1000), plot_title = "Dynamics when changing Budget")
+budg_plots = simul_plot(adf_budg, :house_budget_perc; leg = :outertopright, color = (palette(:Oranges, 11)))
+plot(budg_plots..., layout=(3, 2), size = (1100, 1000), plot_title = "Pop. Dynamics when changing House Budget")
+budg_mark_plots = simul_market(adf_budg,mdf_budget, :house_budget_perc; leg = :outertopright,color = (palette(:Oranges, 11)))
+plot(budg_mark_plots..., layout=(3, 2), size = (1100, 1000), plot_title = "Market Dynamics when House Budget")

@@ -7,65 +7,50 @@ Pkg.instantiate()
 include(joinpath(dirname(@__DIR__), "src", "config_parallel.jl"))
 
 ### For cat penalty
-@everywhere function phil_penal(;penalty=penalty, no_of_years=no_of_years, start_year=start_year, seed=seed)
-    util_coef = Dict(1=> [0, 600000, 130553, 128990, 154887, 72443], 
-                2=> [0, 600000, 130553, 128990, 154887, 72443], 
-                3=> [0, 600000, 130553, 128990, 154887, 72443]
-    )
-    
-    model = PhilSim(phil_bg, phil_cbsa_base_pop, synth_flood_record;no_of_years=Int(no_of_years), start_year=Int(start_year), perc_growth=0.01, flood_coefficient=-50000.0, 
-             risk_averse=0.5, flood_mem=10, base_move=0.025, build_inc_perc=0.10, price_inc_perc=0.10, 
-             penalty=penalty, util_coef=util_coef, seed=Int(seed), house_budget_mode="rhea", house_budget_perc=0.33
-    )
-             
-            
+@everywhere function phil_penal(;flood_rec = phil_flood_record, penalty=penalty, no_of_years=no_of_years, start_year=start_year, seed=seed)
+    model = phil_model(;flood_rec = flood_rec, no_of_years=Int(no_of_years), start_year=Int(start_year), penalty=penalty, seed=seed)      
     return model
 end
 
 penal_params = Dict(
-    :penalty=>push!(collect(range(0.0,100000.0,step=10000.0)), 10000000.0),
+    #:penalty=>push!(collect(range(0.0,1000,step=100)), 10000000.0),
+    :penalty=>[0.0,1e2,1e3,1e4,1e5,1e6,1e8,1e10],
     :no_of_years=>39,
     :start_year=>1981, 
     :seed=>1500
 )
 
-adata = [(hh_low, sum, HH), (hh_med, sum, HH), (hh_high, sum, HH) , (occ_low, sum, BG), (occ_med, sum, BG), (occ_high, sum, BG)]
-
-adf_penal,_ = paramscan(penal_params, phil_penal; parallel=true, showprogress=true, adata, n=39)
+adf_penal,mdf_penal = paramscan(penal_params, phil_penal; parallel=true, showprogress=true, adata=simul_adata, mdata=simul_mdata, n=39)
 
 
 ### For for flood disamenity
-@everywhere function phil_disam(;flood_coefficient=flood_coefficient, no_of_years=no_of_years, start_year=start_year, seed=seed)
-    util_coef = Dict(1=> [0, 600000, 130553, 128990, 154887, 72443], 
-                2=> [0, 600000, 130553, 128990, 154887, 72443], 
-                3=> [0, 600000, 130553, 128990, 154887, 72443]
-    )
-    
-    model = PhilSim(phil_bg, phil_cbsa_base_pop, phil_flood_record;no_of_years=Int(no_of_years), start_year=Int(start_year), perc_growth=0.01, flood_coefficient = -(flood_coefficient), 
-             risk_averse=0.5, flood_mem=10, base_move=0.025, build_inc_perc=0.10, price_inc_perc=0.10, 
-             penalty=10000.0, util_coef=util_coef, seed=Int(seed), house_budget_mode="rhea", house_budget_perc=0.33
-    )
-             
-            
+@everywhere function phil_disam(;flood_rec = phil_flood_record, flood_coefficient=flood_coefficient, no_of_years=no_of_years, start_year=start_year, seed=seed)
+    model = phil_model(;flood_rec = flood_rec, no_of_years=Int(no_of_years), start_year=Int(start_year), flood_coefficient=flood_coefficient, seed=seed)      
     return model
 end
 
 disam_params = Dict(
-    :flood_coefficient=>collect(range(100000.0,1000000.0,step=50000.0)),
+    :flood_coefficient=>[0.0,1e2,1e3,1e4,1e5,1e6,1e8,1e10],
     :no_of_years=>39,
     :start_year=>1981, 
     :seed=>1500
 )
 
-adf_disam,_ = paramscan(disam_params, phil_disam; parallel=true, showprogress=true, adata, n=39)
+adf_disam,mdf_disam = paramscan(disam_params, phil_disam; parallel=true, showprogress=true, adata=simul_adata, mdata=simul_mdata, n=39)
+
 rmprocs(workers())
 
 
 using Plots
+using ColorSchemes
 include("sim_functions.jl")
 
-penal_plots = simul_plot(adf_penal, :penalty; leg = :outertopright)
+penal_plots = simul_plot(adf_penal, :penalty; leg = :outertopright, color = palette(:OrRd_8))
 plot(penal_plots..., layout=(3, 2), size = (1100, 1000), plot_title = "Dynamics when changing Penalty")
+mark_penal_plots = simul_market(adf_penal,mdf_penal, :penalty; leg = :outertopright, color = palette(:OrRd_8))
+plot(mark_penal_plots..., layout=(3, 2), size = (1100, 1000), plot_title = "Market Dynamics when changing Penalty")
 
-disam_plots = simul_plot(adf_disam, :flood_coefficient)
+disam_plots = simul_plot(adf_disam, :flood_coefficient, color = palette(:GnBu_8))
 plot(disam_plots..., layout=(3, 2), size = (1100, 1000), plot_title = "Dynamics when changing Flood Coef.")
+mark_disam_plots = simul_market(adf_disam,mdf_disam, :flood_coefficient; leg = :outertopright, color = palette(:GnBu_8))
+plot(mark_disam_plots..., layout=(3, 2), size = (1100, 1000), plot_title = "Market Dynamics when changing Flood Coef.")

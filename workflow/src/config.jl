@@ -27,12 +27,12 @@ function PhilSim(bg_df, pop_df, flood_df;no_of_years::Int64, start_year::Int64, 
 end
 
 ###Create function to take different parameter combinations as input:
-function phil_model(; flood_rec = phil_flood_record, perc_growth=0.01, flood_coefficient=-50000.0, 
-    risk_averse=0.5, flood_mem=10, base_move=0.025, build_inc_perc=0.10, price_inc_perc=0.10, 
-    penalty=1000.0, house_budget_mode="rhea", house_budget_perc=0.33,
-    area_l=600000, age_l=130553, stories_l=128990, bath_l=154887, env_amen_l=72443, 
-    area_m=600000, age_m=130553, stories_m=128990, bath_m=154887, env_amen_m=72443, 
-    area_h=600000, age_h=130553, stories_h=128990, bath_h=154887, env_amen_h=72443,
+function phil_model(; flood_rec = phil_flood_record, perc_growth=0.01, flood_coefficient=1000000.0, 
+    risk_averse=0.5, flood_mem=10, base_move=0.01, build_inc_perc=0.10, price_inc_perc=0.10, 
+    penalty=10000.0, house_budget_mode="rhea", house_budget_perc=0.33,
+    area_l=300000, age_l=130553, stories_l=128990, bath_l=154887, env_amen_l=72443, 
+    area_m=300000, age_m=130553, stories_m=128990, bath_m=154887, env_amen_m=72443, 
+    area_h=300000, age_h=130553, stories_h=128990, bath_h=154887, env_amen_h=72443,
     no_of_years=no_of_years, start_year=start_year, seed=seed
 )
 util_low = [0, area_l, age_l, stories_l, bath_l, env_amen_l]
@@ -47,4 +47,21 @@ model = PhilSim(phil_bg, phil_cbsa_base_pop, flood_rec;no_of_years=Int(no_of_yea
 )
 return model
 end
-    
+
+###Create function to handle different utility values as input
+function phil_util(;area_l=area_l, age_l=age_l, stories_l=stories_l, bath_l=bath_l, env_amen_l=env_amen_l, 
+    area_m=area_m, age_m=age_m, stories_m=stories_m, bath_m=bath_m, env_amen_m=env_amen_m, 
+    area_h=area_h, age_h=age_h, stories_h=stories_h, bath_h=bath_h, env_amen_h=env_amen_h,
+    no_of_years=no_of_years, start_year=start_year, seed=seed
+)
+util_low = [0, area_l, age_l, stories_l, bath_l, env_amen_l]
+util_med = [0, area_m, age_m, stories_m, bath_m, env_amen_m]
+util_high = [0, area_h, age_h, stories_h, bath_h, env_amen_h]
+util_coef = Dict(1=>util_low, 2=>util_med, 3=>util_high)
+
+model = PhilSim(phil_bg, phil_cbsa_base_pop, phil_flood_record;no_of_years=Int(no_of_years), start_year=Int(start_year), perc_growth=0.01, flood_coefficient=50000.0, 
+         risk_averse=0.5, flood_mem=10, base_move=0.01, build_inc_perc=0.10, price_inc_perc=0.10, 
+         penalty=50.0, util_coef=util_coef, seed=Int(seed), house_budget_mode="rhea", house_budget_perc=0.33
+)
+return model
+end

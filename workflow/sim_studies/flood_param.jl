@@ -13,7 +13,7 @@ include(joinpath(dirname(@__DIR__), "src", "config_parallel.jl"))
 end
 
 averse_params = Dict(
-    :risk_averse=>collect(range(0,1,step=0.1)),
+    :risk_averse=>collect(range(0.1,0.9,step=0.2)),
     :no_of_years=>39,
     :start_year=>1981, 
     :seed=>1500
@@ -34,7 +34,7 @@ mem_params = Dict(
     :start_year=>1981, 
     :seed=>1500
 )
-
+#collect(range(5,40,step=5))
 
 adf_mem,mdf_mem = paramscan(mem_params, phil_mem; parallel=true, showprogress=true, adata=simul_adata, mdata=simul_mdata, n=39)
 
@@ -47,12 +47,12 @@ using Plots
 using ColorSchemes
 include("sim_functions.jl")
 
-averse_plots = simul_plot(adf_averse, :risk_averse; leg = :outertopright)
+averse_plots = simul_plot(adf_averse, :risk_averse; leg = :outertopright, color = palette(:BrBG_6))
 plot(averse_plots..., layout=(3, 2), size = (1100, 1000), plot_title = "Pop. Dynamics when changing R_A")
-averse_mark_plots = simul_market(adf_averse,mdf_averse, :risk_averse; leg = :outertopright)
+averse_mark_plots = simul_market(adf_averse,mdf_averse, :risk_averse; leg = :outertopright, color = palette(:BrBG_6))
 plot(averse_mark_plots..., layout=(3, 2), size = (1100, 1000), plot_title = "Market Dynamics when changing R_A")
 
-mem_plots = simul_plot(adf_mem, :flood_mem)
+mem_plots = simul_plot(adf_mem, :flood_mem, color = palette(:Blues_8))
 plot(mem_plots..., layout=(3, 2), size = (1100, 1000), plot_title = "Pop. Dynamics when changing Flood Mem")
-mem_mark_plots = simul_market(adf_mem,mdf_mem, :flood_mem; leg = :outertopright)
+mem_mark_plots = simul_market(adf_mem,mdf_mem, :flood_mem; leg = :outertopright, color = palette(:Blues_8))
 plot(mem_mark_plots..., layout=(3, 2), size = (1100, 1000), plot_title = "Market Dynamics when changing Flood Mem")
