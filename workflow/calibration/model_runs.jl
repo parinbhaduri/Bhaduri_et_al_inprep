@@ -24,8 +24,8 @@ end
     using LinearAlgebra
 end
 
-@everywhere include(joinpath(@__DIR__,"src/data_collect.jl"))
-@everywhere include(joinpath(@__DIR__,"src/config.jl"))
+@everywhere include(joinpath(dirname(@__DIR__),"src/data_collect.jl"))
+@everywhere include(joinpath(dirname(@__DIR__),"src/config.jl"))
 
 
 calib_params = Dict(
