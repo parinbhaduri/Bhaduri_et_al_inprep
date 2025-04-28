@@ -15,7 +15,7 @@ include(joinpath(dirname(@__DIR__), "src", "functions.jl"))
     return model
 end
 
-gen_param = Dict(:seed => collect(range(1000,1999)))
+gen_param = Dict(:seed => collect(range(1000,2499)))
 
 #Run and collect data
 adf,mdf = paramscan(gen_param, phil_gen; n = 39,
@@ -77,14 +77,14 @@ sim_out_med = select(sim_out, r"_med")
 sim_out_high = select(sim_out, r"_high")
 
 ## Calculate Ensemble Variance of model errors for different ensemble sizes
-ens_size = collect(range(10, 1000, step=10))
+ens_size = collect(range(10, 1500, step=10))
 ens_var_low = []
 ens_var_med = []
 ens_var_high = []
 for e_s in ens_size
-    push!(ens_var_low, var([model_error(Vector(sim_out_low[iter[1],:]),Vector(sim_out_low[iter[2],:])) for iter in Combinatorics.combinations(round.(Int, range(1,1000, length = e_s)), 2)]))
-    push!(ens_var_med, var([model_error(Vector(sim_out_med[iter[1],:]),Vector(sim_out_med[iter[2],:])) for iter in Combinatorics.combinations(round.(Int, range(1,1000, length = e_s)), 2)]))
-    push!(ens_var_high, var([model_error(Vector(sim_out_high[iter[1],:]),Vector(sim_out_high[iter[2],:])) for iter in Combinatorics.combinations(round.(Int, range(1,1000, length = e_s)), 2)]))
+    push!(ens_var_low, var([model_error(Vector(sim_out_low[iter[1],:]),Vector(sim_out_low[iter[2],:])) for iter in Combinatorics.combinations(round.(Int, range(1,e_s, step = 1)), 2)])) #round.(Int, range(1,1500, length = e_s))
+    push!(ens_var_med, var([model_error(Vector(sim_out_med[iter[1],:]),Vector(sim_out_med[iter[2],:])) for iter in Combinatorics.combinations(round.(Int, range(1,e_s, step = 1)), 2)]))
+    push!(ens_var_high, var([model_error(Vector(sim_out_high[iter[1],:]),Vector(sim_out_high[iter[2],:])) for iter in Combinatorics.combinations(round.(Int, range(1,e_s, step = 1)), 2)]))
 end
 
 ##Plot results
@@ -93,8 +93,27 @@ using ColorSchemes
 include("sim_functions.jl")
 ### Plot Total ensemble
 ens_plots = simul_plot(adf, :seed; leg = false, color = cgrad(:grays))
-plot(ens_plots..., layout=(3, 2), size = (1100, 1000), plot_title = "Pop. Dynamics (Ensemble)")
 ens_mark_plots = simul_market(adf,mdf, :seed; leg = false, color = cgrad(:grays))
+#Add averages
+gadf = groupby(adf, :time)
+avg_adf = combine(gadf, Not(:time) .=> mean, renamecols=false)
+gmdf = groupby(mdf, :time)
+avg_mdf = combine(gmdf, Not(:time) .=> mean, renamecols=false)
+
+for (i,col) in enumerate([:sum_hh_low_HH,:sum_occ_low_BG,:sum_hh_med_HH,:sum_occ_med_BG,:sum_hh_high_HH,:sum_occ_high_BG])
+    plot!(ens_plots[i], avg_adf.time, avg_adf[!,col], lw = 3, lc = :red)
+end
+
+for (i,col) in enumerate([:moved_low,:mean_price_low_BG,:moved_med,:mean_price_med_BG,:moved_high,:mean_price_high_BG])
+    if isodd(i)
+        plot!(ens_mark_plots[i], avg_mdf.time[2:end], avg_mdf[!,col][2:end], lw = 3, lc = :red)
+    else
+        plot!(ens_mark_plots[i], avg_adf.time, avg_adf[!,col], lw = 3, lc = :red)
+    end
+end
+
+
+plot(ens_plots..., layout=(3, 2), size = (1100, 1000), plot_title = "Pop. Dynamics (Ensemble)")
 plot(ens_mark_plots..., layout=(3, 2), size = (1100, 1000), plot_title = "Market Dynamics (Ensemble)")
 
 ### Plot changes in ensemble variance

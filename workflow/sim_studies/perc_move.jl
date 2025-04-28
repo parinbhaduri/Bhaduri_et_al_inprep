@@ -7,13 +7,14 @@ Pkg.instantiate()
 include(joinpath(dirname(@__DIR__), "src", "config_parallel.jl"))
 
 ### For Model Population Growth
-@everywhere function phil_pop(;flood_rec = phil_flood_record, perc_growth=perc_growth, no_of_years=no_of_years, start_year=start_year, seed=seed)
-    model = phil_model(;flood_rec = flood_rec, no_of_years=Int(no_of_years), start_year=Int(start_year), perc_growth=perc_growth, seed=seed)      
+@everywhere function phil_pop(;flood_rec = phil_flood_record, dist_cat=dist_cat, no_of_years=no_of_years, start_year=start_year, seed=seed)
+    dist_param_dict = Dict(2=>[0.3,0.4,0.3],1=>[0.4,0.3,0.3],3=>[0.3,0.3,0.4])
+    model = phil_model(;flood_rec = flood_rec, no_of_years=Int(no_of_years), start_year=Int(start_year), dist_param=dist_param_dict[dist_cat], seed=seed)      
     return model
 end
 
 pop_params = Dict(
-    :perc_growth=>collect(range(0.0, 0.05, step = 0.01)),
+    :dist_cat=>[1,2,3],
     :no_of_years=>39,
     :start_year=>1981, 
     :seed=>1500
@@ -46,9 +47,9 @@ using Plots
 using ColorSchemes
 include("sim_functions.jl")
 
-pop_plots = simul_plot(adf_pop, :perc_growth; leg = :outertopright, color = palette(:Set3_11))
+pop_plots = simul_plot(adf_pop, :dist_cat; leg = :outertopright, color = palette(:Set3_3))
 plot(pop_plots..., layout=(3, 2), size = (1100, 1000), plot_title = "Pop. Dynamics when changing Pop. Growth")
-pop_mark_plots = simul_market(adf_pop,mdf_pop, :perc_growth; leg = :outertopright, color = palette(:Set3_11))
+pop_mark_plots = simul_market(adf_pop,mdf_pop, :dist_cat; leg = :outertopright, color = palette(:Set3_3))
 plot(pop_mark_plots..., layout=(3, 2), size = (1100, 1000), plot_title = "Market Dynamics when changing Pop. Growth")
 
 move_plots = simul_plot(adf_move, :base_move; leg = :outertopright, color = palette(:Set3_11))
