@@ -3,8 +3,30 @@ import Pkg
 Pkg.activate(".")
 Pkg.instantiate()
 
+using Distributed, SlurmClusterManager
+
+addprocs(SlurmManager())
+@everywhere println("hello from $(myid()):$(gethostname())")
+
+# instantiate and precompile environment
+@everywhere begin
+  using Pkg;Pkg.activate("."); 
+  Pkg.instantiate(); Pkg.precompile()
+end
 
 ### PARALLEL ENSEMBLE RUN ###
+@everywhere begin
+    using CSV, DataFrames
+    using Statistics
+    using DataStructures
+    using Agents
+    using CHANCE_C
+    using LinearAlgebra
+end
+
+@everywhere include(joinpath(@__DIR__,"src/data_collect.jl"))
+@everywhere include(joinpath(@__DIR__,"src/config.jl"))
+
 
 calib_params = Dict(
     :risk_averse=>collect(range(0.1,0.9,step=0.2)),
