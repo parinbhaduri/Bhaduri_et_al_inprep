@@ -1,9 +1,9 @@
 #!/bin/bash
-#SBATCH --job-name=balt_MoM
+#SBATCH --job-name=calib_runs_phil
 #SBATCH --nodes=3
 #SBATCH --ntasks-per-node=50
-#SBATCH --output=workflow/calibration/test/output_text.txt
-#SBATCH --error=workflow/calibration/test/error_text.txt
+#SBATCH --output=workflow/calibration/output_text.txt
+#SBATCH --error=workflow/calibration/error_text.txt
 #SBATCH --exclusive
 
 # Print properties of job as submitted
