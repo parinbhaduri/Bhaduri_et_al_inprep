@@ -30,7 +30,7 @@ moved_high(model) = moved(model, 3)
 
 ##Calculating Population in floodplain
 function flpn_pop(model, cat)
-    return length([id for id in allids(model) if model[id] isa HHAgent && model[model[id].bg_id].perc_fld_area > 0 && model[id].group == cat])
+    return length([id for id in allids(model) if model[id] isa HHAgent && model[id].bg_id >= 1 && model[model[id].bg_id].perc_fld_area > 0 && model[id].group == cat])
 end
 
 flpn_pop_low(model) = flpn_pop(model, 1)
