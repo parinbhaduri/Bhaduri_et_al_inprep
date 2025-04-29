@@ -31,8 +31,8 @@ end
 calib_params = Dict(
     :risk_averse=>0.5,#collect(range(0.1,0.9,step=0.2)),
     :flood_mem=>10,#[5,10,15],
-    :build_perc=>0.1,#[0.05,0.1,0.25, 0.4],
-    :price_perc=>0.1,#[0.1,0.15,0.2],
+    :build_inc_perc=>0.1,#[0.05,0.1,0.25, 0.4],
+    :price_inc_perc=>0.1,#[0.1,0.15,0.2],
     :perc_growth=>0.02,
     :base_move=>0.01,#collect(range(0.0, 0.03, step = 0.005)),
     :prop_l=>0.5,#[0.3,0.5,0.7], 
