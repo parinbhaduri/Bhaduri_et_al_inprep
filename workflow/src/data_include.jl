@@ -1,6 +1,6 @@
 ###import input data 
 data_location = "philadelphia-data/model_inputs"
-bg_file = "phil_flood_bg_2019_v2.csv"
+bg_file = "phil_flood_bg_2019_v1.csv"
 pop_file = "philly_cbsa_pop_0.csv"
 flood_file = "phil_flood_hist_year.csv"
 

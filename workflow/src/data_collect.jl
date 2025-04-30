@@ -37,6 +37,15 @@ flpn_pop_low(model) = flpn_pop(model, 1)
 flpn_pop_med(model) = flpn_pop(model, 2)
 flpn_pop_high(model) = flpn_pop(model, 3)
 
+##Calculating Population exposed to flooding at each time step
+function pop_exposed(model, cat)
+    return length([id for id in allids(model) if model[id] isa HHAgent && model[id].bg_id >= 1 && model[id].group == cat && model[id].flood_hazard[model.tick] > 0])
+end
+
+pop_exposed_low(model) = pop_exposed(model, 1)
+pop_exposed_med(model) = pop_exposed(model, 2)
+pop_exposed_high(model) = pop_exposed(model, 3)
+
 
 #Simulation Studies data collection
 simul_adata = [(hh_low, sum, HH), (hh_med, sum, HH), (hh_high, sum, HH), (occ_low, sum, BG), (occ_med, sum, BG), (occ_high, sum, BG), 
