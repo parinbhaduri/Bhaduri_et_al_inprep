@@ -16,6 +16,8 @@ include(joinpath(dirname(@__DIR__), "src", "functions.jl"))
 end
 
 gen_param = Dict(:seed => collect(range(1000,2499)))
+gen_param_2 = Dict(:risk_averse=>0.3, :base_move=>0.005, :seed => collect(range(1000,2499)))
+gen_param_3 = Dict(:build_perc=>0.25, :price_perc=>0.15, :seed => collect(range(1000,2499)))
 
 #Run and collect data
 adf,mdf = paramscan(gen_param, phil_gen; n = 39,
@@ -24,6 +26,23 @@ adf,mdf = paramscan(gen_param, phil_gen; n = 39,
 
 CSV.write(joinpath(@__DIR__,"sim_data/dataframes/adf_ens_var.csv"), adf)
 CSV.write(joinpath(@__DIR__,"sim_data/dataframes/mdf_ens_var.csv"), mdf)
+
+adf,mdf = paramscan(gen_param_2, phil_gen; n = 39,
+     parallel=true, showprogress=true, adata=simul_adata, mdata=simul_mdata
+)
+
+CSV.write(joinpath(@__DIR__,"sim_data/dataframes/adf_ens_var_2.csv"), adf)
+CSV.write(joinpath(@__DIR__,"sim_data/dataframes/mdf_ens_var_2.csv"), mdf)
+
+adf,mdf = paramscan(gen_param_3, phil_gen; n = 39,
+     parallel=true, showprogress=true, adata=simul_adata, mdata=simul_mdata
+)
+
+CSV.write(joinpath(@__DIR__,"sim_data/dataframes/adf_ens_var_3.csv"), adf)
+CSV.write(joinpath(@__DIR__,"sim_data/dataframes/mdf_ens_var_3.csv"), mdf)
+
+
+
 
 #Calculate model outcomes from results
 using CSV, DataFrames
