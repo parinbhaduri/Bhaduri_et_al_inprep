@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --job-name=calib_runs_phil
-#SBATCH --nodes=3
+#SBATCH --nodes=6
 #SBATCH --ntasks-per-node=50
 #SBATCH --output=workflow/calibration/output_text.txt
 #SBATCH --error=workflow/calibration/error_text.txt
