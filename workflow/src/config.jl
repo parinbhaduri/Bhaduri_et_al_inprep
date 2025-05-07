@@ -27,7 +27,7 @@ function PhilSim(bg_df, pop_df, flood_df;no_of_years::Int64, start_year::Int64, 
 end
 
 ###Create function to take different parameter combinations as input:
-function phil_model(; flood_rec = phil_flood_record, perc_growth=0.043, flood_coefficient=0.5, 
+function phil_model(; flood_rec = phil_flood_record, perc_growth=0.01, flood_coefficient=0.5, 
     risk_averse=0.5, flood_mem=10, base_move=0.01, build_inc_perc=0.10, price_inc_perc=0.10, 
     penalty=0.5, house_budget_mode="rhea", rhea_coef = 0.7, house_budget_perc=0.33, dist_param = [0.3, 0.4, 0.3],
     prop_l=0.5, env_amen_l=0.5, prop_m=0.5, env_amen_m=0.5, 
@@ -51,16 +51,16 @@ end
 function phil_util(;prop_l=prop_l, env_amen_l=env_amen_l, 
     prop_m=prop_m, env_amen_m=env_amen_m, 
     prop_h=prop_h, env_amen_h=env_amen_h,
-    rhea_coef = rhea_coef, no_of_years=no_of_years, start_year=start_year, seed=seed
+    base_move = base_move, no_of_years=no_of_years, start_year=start_year, seed=seed
 )
     util_low = [prop_l, env_amen_l]
     util_med = [prop_m, env_amen_m]
     util_high = [prop_h, env_amen_h]
     util_coef = Dict(1=>util_low, 2=>util_med, 3=>util_high)
 
-    model = PhilSim(phil_bg, phil_cbsa_base_pop, phil_flood_record;no_of_years=Int(no_of_years), start_year=Int(start_year), perc_growth=0.043, flood_coefficient=0.5, 
-         risk_averse=0.5, flood_mem=10, base_move=0.01, build_inc_perc=0.10, price_inc_perc=0.10, dist_param = [0.3, 0.4, 0.3], 
-         penalty=0.5, util_coef=util_coef, seed=Int(seed), house_budget_mode="rhea", rhea_coef = rhea_coef, house_budget_perc=0.33
+    model = PhilSim(phil_bg, phil_cbsa_base_pop, phil_flood_record;no_of_years=Int(no_of_years), start_year=Int(start_year), perc_growth=0.01, flood_coefficient=0.5, 
+         risk_averse=0.5, flood_mem=10, base_move=base_move, build_inc_perc=0.10, price_inc_perc=0.10, dist_param = [0.3, 0.4, 0.3], 
+         penalty=0.5, util_coef=util_coef, seed=Int(seed), house_budget_mode="rhea", rhea_coef = 0.7, house_budget_perc=0.33
     )
     return model
 end
