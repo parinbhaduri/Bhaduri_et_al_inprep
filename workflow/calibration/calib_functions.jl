@@ -51,9 +51,6 @@ function PhilABM(;bg_df = phil_bg, pop_df = phil_cbsa_base_pop, f_dict = phil_di
 end
 
 
-
-allcombinations(v...) = vec(collect(Iterators.product(v...)))
-
 #Function to run model instance and collect data
 function run_single(
     params::Tuple,

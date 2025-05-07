@@ -32,8 +32,8 @@ end
 calib_params = OrderedDict(
     :risk_averse=>[0.3,0.5,0.7],
     :build_inc_perc=>[0.1,0.25, 0.4],
-    :price_inc_perc=>[0.1,0.15,0.2], #could reduce to two
-    :rhea_coef=>[0.65,0.7,0.75],
+    :price_inc_perc=>[0.1, 0.2], #could reduce to two
+    :rhea_coef=>[0.65, 0.75],
     :base_move=>[0.01,0.02,0.03],
     :prop_l=>[0.25, 0.75], 
     :env_amen_l=>[0.25, 0.75], 
@@ -41,7 +41,7 @@ calib_params = OrderedDict(
     :env_amen_m=>[0.25, 0.75], 
     :prop_h=>[0.25, 0.75],
     :env_amen_h=>[0.25, 0.75],
-    :penalty=>[0.25, 0.75],
+    :penalty=>0.5,#[0.25, 0.75],
     :flood_coefficient=>[0.25, 0.75], 
     :seed=>collect(range(1000,1499)) 
 )
