@@ -1,9 +1,9 @@
 #!/bin/bash
 #SBATCH --job-name=calib_runs_phil
-#SBATCH --nodes=9
+#SBATCH --nodes=6
 #SBATCH --ntasks-per-node=65
-#SBATCH --output=workflow/calibration/output_text_n9.txt
-#SBATCH --error=workflow/calibration/error_text_n9.txt
+#SBATCH --output=workflow/calibration/output_text_n6.txt
+#SBATCH --error=workflow/calibration/error_text_n6.txt
 #SBATCH --exclusive
 
 # Print properties of job as submitted
