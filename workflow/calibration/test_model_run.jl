@@ -57,22 +57,7 @@ flush(stdout)
 ##Run Models. Collect Data
 #Deconstructed model run scheme from Agents.jl
 println("Runnning Models. Collecting Data...")
-output_params = collect(keys(calib_params))
-
-progress = ProgressMeter.Progress(length(combs); enabled = true)
-
-all_data = ProgressMeter.progress_pmap(combs; progress) do comb 
-    run_single(comb, output_params, PhilABM; adata=calib_adata, mdata=calib_mdata, n=39)
-end;
-
-println("Writing Data to DF...")
-
-adf_calib = DataFrame()
-mdf_calib = DataFrame()
-for (df1, df2) in all_data
-    append!(adf_calib, df1)
-    append!(mdf_calib, df2)
-end
+adf_calib, mdf_calib = ModelRuns(calib_params)
 
 
 #Run Models. Collect Data
