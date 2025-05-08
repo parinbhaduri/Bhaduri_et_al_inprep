@@ -49,7 +49,7 @@ calib_params = Dict(
     :env_amen_h=>0.56,#[0.3,0.5,0.7],
     :penalty=>0.57,
     :flood_coefficient=>0.58,#[0.3,0.5,0.7],
-    :seed=>collect(range(1000,1999))
+    :seed=>collect(range(1000,6912999))
 )
 
 
