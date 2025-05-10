@@ -7,36 +7,37 @@ Pkg.instantiate()
 include(joinpath(dirname(@__DIR__), "src", "config_parallel.jl"))
 
 ### For cat penalty
-@everywhere function phil_penal(;flood_rec = phil_flood_record, penalty=penalty, no_of_years=no_of_years, start_year=start_year, seed=seed)
-    model = phil_model(;flood_rec = flood_rec, no_of_years=Int(no_of_years), start_year=Int(start_year), penalty=penalty, seed=seed)      
-    return model
-end
 
 penal_params = Dict(
+    :flood_rec => phil_flood_record,
+    :risk_averse=>0.7,
+    :build_inc_perc=>0.4,
+    :perc_growth => 0.01,
+    :base_move=>0.03,
     #:penalty=>push!(collect(range(0.0,1000,step=100)), 10000000.0),
-    :penalty=>[0,0.1,0.3,0.5,0.7,0.9,3],
+    :penalty=>[0,0.1,0.3,0.5,0.7,0.9,10],
     :no_of_years=>39,
     :start_year=>1981, 
     :seed=>1500
 )
 
-adf_penal,mdf_penal = paramscan(penal_params, phil_penal; parallel=true, showprogress=true, adata=simul_adata, mdata=simul_mdata, n=39)
+adf_penal,mdf_penal = paramscan(penal_params, phil_model; parallel=true, showprogress=true, adata=simul_adata, mdata=simul_mdata, n=39)
 
 
 ### For for flood disamenity
-@everywhere function phil_disam(;flood_rec = phil_flood_record, flood_coefficient=flood_coefficient, no_of_years=no_of_years, start_year=start_year, seed=seed)
-    model = phil_model(;flood_rec = flood_rec, no_of_years=Int(no_of_years), start_year=Int(start_year), flood_coefficient=flood_coefficient, seed=seed)      
-    return model
-end
-
 disam_params = Dict(
-    :flood_coefficient=>[0,0.1,0.3,0.5,0.7,0.9,3],
+    :flood_rec => phil_flood_record,
+    :risk_averse=>0.7,
+    :build_inc_perc=>0.4,
+    :perc_growth => 0.01,
+    :base_move=>0.03,
+    :flood_coefficient=>[0,0.1,0.3,0.5,0.7,0.9,10],
     :no_of_years=>39,
     :start_year=>1981, 
     :seed=>1500
 )
 
-adf_disam,mdf_disam = paramscan(disam_params, phil_disam; parallel=true, showprogress=true, adata=simul_adata, mdata=simul_mdata, n=39)
+adf_disam,mdf_disam = paramscan(disam_params, phil_model; parallel=true, showprogress=true, adata=simul_adata, mdata=simul_mdata, n=39)
 
 rmprocs(workers())
 

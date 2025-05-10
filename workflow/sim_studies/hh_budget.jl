@@ -7,14 +7,14 @@ Pkg.instantiate()
 include(joinpath(dirname(@__DIR__), "src", "config_parallel.jl"))
 
 ### For cat penalty
-@everywhere function phil_budg(; flood_rec = synth_flood_record, house_budget_mode=house_budget_mode, rhea_coef = rhea_coef, no_of_years=no_of_years, start_year=start_year, seed=seed)
+@everywhere function phil_budg(; flood_rec = phil_flood_record, house_budget_mode=house_budget_mode, rhea_coef = rhea_coef, no_of_years=no_of_years, start_year=start_year, seed=seed)
     model = phil_model(;flood_rec = flood_rec, no_of_years=Int(no_of_years), start_year=Int(start_year), house_budget_mode=house_budget_mode, rhea_coef = rhea_coef, seed=seed)      
     return model
 end
 
 budg_params = Dict(
     :house_budget_mode=>"rhea",
-    :rhea_coef=>collect(range(0.6,0.71,step=0.01)),
+    :rhea_coef=>collect(range(0.65,0.75,step=0.02)),
     :no_of_years=>39,
     :start_year=>1981, 
     :seed=>1500

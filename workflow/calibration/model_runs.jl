@@ -37,54 +37,54 @@ end
 
 
 calib_params_1 = OrderedDict(
-    :risk_averse=>[0.3,0.5,0.7],
-    :build_inc_perc=>[0.1,0.25, 0.4],
+    :risk_averse=>[0.3,0.7], #0.5,
+    :build_inc_perc=>[0.1, 0.4], #0.25,
     :price_inc_perc=>[0.1, 0.2], #could reduce to two
     :rhea_coef=>[0.65, 0.75],
-    :base_move=>[0.01,0.02,0.03],
+    :base_move=>[0.01,0.03], #0.02,
     :prop_l=>[0.25, 0.75],
     :env_amen_l=>[0.25, 0.75],
     :prop_m=>[0.25, 0.75],
     :env_amen_m=>[0.25, 0.75],
     :prop_h=>[0.25, 0.75],
     :env_amen_h=>[0.25, 0.75],
-    :penalty=>0.5,#[0.25, 0.75],
+    :penalty=>[0.25, 0.75],
     :flood_coefficient=>[0.25, 0.75],
     :seed=>collect(range(1000,1199))
 )
 
 
 calib_params_2 = OrderedDict(
-    :risk_averse=>[0.3,0.5,0.7],
-    :build_inc_perc=>[0.1,0.25, 0.4],
+    :risk_averse=>[0.3,0.7], #0.5,
+    :build_inc_perc=>[0.1, 0.4], #0.25,
     :price_inc_perc=>[0.1, 0.2], #could reduce to two
     :rhea_coef=>[0.65, 0.75],
-    :base_move=>[0.01,0.02,0.03],
+    :base_move=>[0.01,0.03], #0.02,
     :prop_l=>[0.25, 0.75],
     :env_amen_l=>[0.25, 0.75],
     :prop_m=>[0.25, 0.75],
     :env_amen_m=>[0.25, 0.75],
     :prop_h=>[0.25, 0.75],
     :env_amen_h=>[0.25, 0.75],
-    :penalty=>0.5,#[0.25, 0.75],
+    :penalty=>[0.25, 0.75],#[0.25, 0.75],
     :flood_coefficient=>[0.25, 0.75],
     :seed=>collect(range(1200,1399))
 )
 
 
 calib_params_3 = OrderedDict(
-    :risk_averse=>[0.3,0.5,0.7],
-    :build_inc_perc=>[0.1,0.25, 0.4],
+    :risk_averse=>[0.3,0.7], #0.5,
+    :build_inc_perc=>[0.1, 0.4], #0.25,
     :price_inc_perc=>[0.1, 0.2], #could reduce to two
     :rhea_coef=>[0.65, 0.75],
-    :base_move=>[0.01,0.02,0.03],
+    :base_move=>[0.01,0.03], #0.02,
     :prop_l=>[0.25, 0.75],
     :env_amen_l=>[0.25, 0.75],
     :prop_m=>[0.25, 0.75],
     :env_amen_m=>[0.25, 0.75],
     :prop_h=>[0.25, 0.75],
     :env_amen_h=>[0.25, 0.75],
-    :penalty=>0.5,#[0.25, 0.75],
+    :penalty=>[0.25, 0.75],#[0.25, 0.75],
     :flood_coefficient=>[0.25, 0.75],
     :seed=>collect(range(1400,1499))
 )
@@ -92,7 +92,7 @@ calib_params_3 = OrderedDict(
 
 #Calculate parameter combinations
 total_runs = length(Iterators.product(values(calib_params_1)...)) + length(Iterators.product(values(calib_params_2)...)) + length(Iterators.product(values(calib_params_3)...))
-println("Number of Model Runs: ",length(combs))
+println("Number of Model Runs: ",total_runs)
 flush(stdout)
 
 

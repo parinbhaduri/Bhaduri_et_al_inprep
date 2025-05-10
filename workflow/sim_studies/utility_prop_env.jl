@@ -12,30 +12,45 @@ include(joinpath(dirname(@__DIR__), "src", "config_parallel.jl"))
 ##For Property Utility Coef
 
 prop_params_high = Dict(
+    :flood_rec => synth_flood_record,
+    :build_inc_perc=>0.5,
+    :perc_growth => 0.03,
+    :risk_averse=>0.1,
+    :base_move=>0.04,
     :prop_l=>0.5, :env_amen_l=>0.5, 
     :prop_m=>0.5, :env_amen_m=>0.5, 
-    :prop_h=>[0,0.1,0.3,0.5,0.7,0.9,3], :env_amen_h=>0.5,
+    :prop_h=>[0,0.1,0.3,0.5,0.7,0.9,10], :env_amen_h=>0.5,
     :no_of_years=>39,
     :start_year=>1981, 
     :seed=>1500
 )
 
-adf_high_prop,mdf_high_prop = paramscan(prop_params_high, phil_util; parallel=true, showprogress=true, adata=simul_adata, mdata = simul_mdata, n=39)
+adf_high_prop,mdf_high_prop = paramscan(prop_params_high, phil_model; parallel=true, showprogress=true, adata=simul_adata, mdata = simul_mdata, n=39)
 
 prop_params_med = Dict(
+    :flood_rec => synth_flood_record,
+    :risk_averse=>0.1,
+    :build_inc_perc=>0.5,
+    :perc_growth => 0.03,
+    :base_move=>0.04,
     :prop_l=>0.5, :env_amen_l=>0.5, 
-    :prop_m=>[0,0.1,0.3,0.5,0.7,0.9,3], :env_amen_m=>0.5, 
+    :prop_m=>[0,0.1,0.3,0.5,0.7,0.9,10], :env_amen_m=>0.5, 
     :prop_h=>0.5, :env_amen_h=>0.5,
     :no_of_years=>39,
     :start_year=>1981, 
     :seed=>1500
 )
 
-adf_med_prop,mdf_med_prop = paramscan(prop_params_med, phil_util; parallel=true, showprogress=true, adata=simul_adata, mdata = simul_mdata, n=39)
+adf_med_prop,mdf_med_prop = paramscan(prop_params_med, phil_model; parallel=true, showprogress=true, adata=simul_adata, mdata = simul_mdata, n=39)
 
 
 prop_params_low = Dict(
-    :prop_l=>[0,0.1,0.3,0.5,0.7,0.9,3], :env_amen_l=>0.5, 
+    :flood_rec => synth_flood_record,
+    :risk_averse=>0.1,
+    :build_inc_perc=>0.5,
+    :perc_growth => 0.03,
+    :base_move=>0.04,
+    :prop_l=>[0,0.1,0.3,0.5,0.7,0.9,10], :env_amen_l=>0.5, 
     :prop_m=>0.5, :env_amen_m=>0.5, 
     :prop_h=>0.5, :env_amen_h=>0.5,
     :no_of_years=>39,
@@ -43,34 +58,49 @@ prop_params_low = Dict(
     :seed=>1500
 )
 
-adf_low_prop,mdf_low_prop = paramscan(prop_params_low, phil_util; parallel=true, showprogress=true, adata=simul_adata, mdata = simul_mdata, n=39)
+adf_low_prop,mdf_low_prop = paramscan(prop_params_low, phil_model; parallel=true, showprogress=true, adata=simul_adata, mdata = simul_mdata, n=39)
 
 ## For Env. Amenities ##
 env_params_high = Dict(
+    :flood_rec => synth_flood_record,
+    :risk_averse=>0.1,
+    :build_inc_perc=>0.5,
+    :perc_growth => 0.03,
+    :base_move=>0.04,
     :prop_l=>0.5, :env_amen_l=>0.5, 
     :prop_m=>0.5, :env_amen_m=>0.5, 
-    :prop_h=>0.5, :env_amen_h=>[0,0.1,0.3,0.5,0.7,0.9,3],
+    :prop_h=>0.5, :env_amen_h=>[0,0.1,0.3,0.5,0.7,0.9,10],
     :no_of_years=>39,
     :start_year=>1981, 
     :seed=>1500
 )
 
-adf_high_env,mdf_high_env = paramscan(env_params_high, phil_util; parallel=true, showprogress=true, adata=simul_adata, mdata = simul_mdata, n=39)
+adf_high_env,mdf_high_env = paramscan(env_params_high, phil_model; parallel=true, showprogress=true, adata=simul_adata, mdata = simul_mdata, n=39)
 
 env_params_med = Dict(
+    :flood_rec => synth_flood_record,
+    :risk_averse=>0.1,
+    :build_inc_perc=>0.5,
+    :perc_growth => 0.03,
+    :base_move=>0.04,
     :prop_l=>0.5, :env_amen_l=>0.5, 
-    :prop_m=>0.5, :env_amen_m=>[0,0.1,0.3,0.5,0.7,0.9,3], 
+    :prop_m=>0.5, :env_amen_m=>[0,0.1,0.3,0.5,0.7,0.9,10], 
     :prop_h=>0.5, :env_amen_h=>0.5,
     :no_of_years=>39,
     :start_year=>1981, 
     :seed=>1500
 )
 
-adf_med_env,mdf_med_env = paramscan(env_params_med, phil_util; parallel=true, showprogress=true, adata=simul_adata, mdata = simul_mdata, n=39)
+adf_med_env,mdf_med_env = paramscan(env_params_med, phil_model; parallel=true, showprogress=true, adata=simul_adata, mdata = simul_mdata, n=39)
 
 
 env_params_low = Dict(
-    :prop_l=>0.5, :env_amen_l=>[0,0.1,0.3,0.5,0.7,0.9,3], 
+    :flood_rec => synth_flood_record,
+    :risk_averse=>0.1,
+    :build_inc_perc=>0.5,
+    :perc_growth => 0.03,
+    :base_move=>0.04,
+    :prop_l=>0.5, :env_amen_l=>[0,0.1,0.3,0.5,0.7,0.9,10], 
     :prop_m=>0.5, :env_amen_m=>0.5, 
     :prop_h=>0.5, :env_amen_h=>0.5,
     :no_of_years=>39,
@@ -78,7 +108,7 @@ env_params_low = Dict(
     :seed=>1500
 )
 
-adf_low_env,mdf_low_env = paramscan(env_params_low, phil_util; parallel=true, showprogress=true, adata=simul_adata, mdata = simul_mdata, n=39)
+adf_low_env,mdf_low_env = paramscan(env_params_low, phil_model; parallel=true, showprogress=true, adata=simul_adata, mdata = simul_mdata, n=39)
 
 rmprocs(workers())
 

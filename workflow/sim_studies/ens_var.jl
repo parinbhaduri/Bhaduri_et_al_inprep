@@ -10,14 +10,18 @@ include(joinpath(dirname(@__DIR__), "src", "config_parallel.jl"))
 #load calibration functions
 include(joinpath(dirname(@__DIR__), "src", "functions.jl"))
 #Create model functions that only accept a seed value
-@everywhere function phil_gen(;seed=seed)
-    model = phil_model(;flood_rec = phil_flood_record, no_of_years=Int(39), start_year=Int(1981), seed=seed)      
+@everywhere function phil_gen(;risk_averse=risk_averse, base_move=base_move, build_perc=build_perc,
+     price_perc=price_perc, rhea_coef=rhea_coef, seed=seed
+    )
+    model = phil_model(;flood_rec = phil_flood_record, risk_averse=risk_averse, base_move=base_move, build_inc_perc=build_perc,
+        price_inc_perc=price_perc, rhea_coef=rhea_coef, no_of_years=Int(39), start_year=Int(1981), seed=seed
+    )      
     return model
 end
 
-gen_param = Dict(:seed => collect(range(1000,2499)))
-gen_param_2 = Dict(:risk_averse=>0.3, :base_move=>0.005, :seed => collect(range(1000,2499)))
-gen_param_3 = Dict(:build_perc=>0.25, :price_perc=>0.15, :seed => collect(range(1000,2499)))
+gen_param = Dict(:risk_averse=>0.5, :base_move=>0.01,:build_perc=>0.1, :price_perc=>0.1, :rhea_coef=>0.7, :seed => collect(range(1000,2499)))
+gen_param_2 = Dict(:risk_averse=>0.3, :base_move=>0.005,:build_perc=>0.15, :price_perc=>0.125, :rhea_coef=>0.65, :seed => collect(range(1000,2499)))
+gen_param_3 = Dict(:risk_averse=>0.7, :base_move=>0.015,:build_perc=>0.25, :price_perc=>0.15, :rhea_coef=>0.75, :seed => collect(range(1000,2499)))
 
 #Run and collect data
 adf,mdf = paramscan(gen_param, phil_gen; n = 39,
