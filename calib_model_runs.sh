@@ -2,8 +2,8 @@
 #SBATCH --job-name=calib_runs_phil
 #SBATCH --nodes=6
 #SBATCH --ntasks-per-node=65
-#SBATCH --output=workflow/calibration/output_text.txt
-#SBATCH --error=workflow/calibration/error_text.txt
+#SBATCH --output=workflow/calibration/output_text_test.txt
+#SBATCH --error=workflow/calibration/error_text_test.txt
 #SBATCH --exclusive
 
 # Print properties of job as submitted
@@ -21,4 +21,4 @@ echo "SLURM_CPUS_ON_NODE = $SLURM_CPUS_ON_NODE"
 
 
 # Run the Julia code
-julia +1.10 workflow/calibration/model_runs.jl
+julia +1.10 workflow/calibration/test_calib_runs.jl

@@ -77,31 +77,26 @@ function run_single(
     return (df_agent_single, df_model_single)
 end
 
+function run_single_mem(
+    params::Tuple,
+    output_params::Vector{Symbol},
+    initialize;
+    n = 1,
+    kwargs...,
+)
+    """
+    Same as run_single except returns
+    matrices to save memory
+    """
+    output_params_dict = Dict(output_params .=> params)
+    model = initialize(;output_params_dict...)
+    df_agent_single, df_model_single = run!(model, n; kwargs...)
 
-#Deconstructed model run scheme from Agents.jl
-function ModelRuns(calib_params)
-    combs = Iterators.product(values(calib_params)...)
-    output_params = collect(keys(calib_params))
-    progress = ProgressMeter.Progress(length(combs); enabled = true)
-
-
-    all_data = ProgressMeter.progress_pmap(combs; progress) do comb
-        run_single(comb, output_params, PhilABM; adata=calib_adata, mdata=calib_mdata, n=39)
-    end
-
-
-    adf = DataFrame()
-    mdf = DataFrame()
-    for (df1, df2) in all_data
-        append!(adf, df1)
-        append!(mdf, df2)
-    end
-    return adf, mdf
+    mat_agent_single = hcat(Matrix(df_agent_single),repeat(hcat(values(output_params_dict)...),n+1))
+    mat_model_single = hcat(Matrix(df_model_single),repeat(hcat(values(output_params_dict)...),n+1))
+    
+    return (mat_agent_single, mat_model_single)
 end
-
-
-
-
 
 
 
