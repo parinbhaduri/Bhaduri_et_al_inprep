@@ -8,7 +8,6 @@ using Distributed, SlurmClusterManager
 
 
 addprocs(SlurmManager())
-@everywhere println("hello from $(myid()):$(gethostname())")
 
 
 # instantiate and precompile environment
@@ -38,6 +37,7 @@ end
 
 
 calib_params = OrderedDict(
+    :seed=>collect(range(1000,1499)),
     :risk_averse=>[0.3,0.7], #0.5,
     :build_inc_perc=>[0.1, 0.4], #0.25,
     :price_inc_perc=>[0.1, 0.2], #could reduce to two
@@ -50,12 +50,13 @@ calib_params = OrderedDict(
     :prop_h=>[0.25, 0.75],
     :env_amen_h=>[0.25, 0.75],
     :penalty=>[0.25, 0.75],
-    :flood_coefficient=>[0.25, 0.75],
-    :seed=>collect(range(1000,1199))
+    :flood_coefficient=>[0.25, 0.75]
 )
 
+chunk_size = 256000  # Adjust based on memory requirements
+
 # Set up directories and logging
-output_dir = "./results_$(ENV["SLURM_JOB_ID"])"
+output_dir = joinpath(@__DIR__,"data/results_$(ENV["SLURM_JOB_ID"])")
 mkpath(output_dir)
 
 # Set up logging files
@@ -94,7 +95,6 @@ output_params = collect(keys(calib_params))
 
 # Determine total combinations and chunk size
 n_combs = length(combs)
-chunk_size = 10000  # Adjust based on memory requirements
 n_chunks = ceil(Int, n_combs / chunk_size)
 
 log_info("Processing $n_combs parameter combinations in $n_chunks chunks")
@@ -190,9 +190,9 @@ for chunk_idx in 1:n_chunks
     
     # If first run with valid data, save column names
     if first_run && !isempty(adf_chunk) && !isempty(mdf_chunk)
-        adf_cols = names(adf_chunk)
-        mdf_cols = names(mdf_chunk)
-        first_run = false
+        global adf_cols = names(adf_chunk)
+        global mdf_cols = names(mdf_chunk)
+        global first_run = false
         
         # Log column structure
         log_info("Agent dataframe columns: $(join(adf_cols, ", "))")
