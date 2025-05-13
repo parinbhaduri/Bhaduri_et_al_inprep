@@ -189,9 +189,9 @@ for chunk_idx in 1:n_chunks
     
     # If first run with valid data, save column names
     if first_run && !isempty(adf_chunk) && !isempty(mdf_chunk)
-        adf_cols = names(adf_chunk)
-        mdf_cols = names(mdf_chunk)
-        first_run = false
+        global adf_cols = names(adf_chunk)
+        global mdf_cols = names(mdf_chunk)
+        global first_run = false
         
         # Log column structure
         log_info("Agent dataframe columns: $(join(adf_cols, ", "))")
