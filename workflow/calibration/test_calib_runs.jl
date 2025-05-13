@@ -21,6 +21,7 @@ end
 ### PARALLEL ENSEMBLE RUN ###
 
 @everywhere begin
+    using Dates
     using ProgressMeter
     using CSV, DataFrames
     using Statistics
