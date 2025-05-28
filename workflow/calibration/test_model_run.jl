@@ -19,8 +19,8 @@ end
 
 
 ### PARALLEL ENSEMBLE RUN ###
-#using Distributed
-#addprocs(12, exeflags="--project=$(Base.active_project())")
+using Distributed
+addprocs(12, exeflags="--project=$(Base.active_project())")
 @everywhere begin
     using ProgressMeter
     using CSV, DataFrames
@@ -36,6 +36,7 @@ end
 
 
 calib_params = Dict(
+    :seed=>collect(range(1000,1999)),
     :risk_averse=>0.3,#collect(range(0.1,0.9,step=0.2)),
     :build_inc_perc=>0.25,#[0.05,0.1,0.25, 0.4],
     :price_inc_perc=>0.1,#[0.1,0.15,0.2],
@@ -48,8 +49,8 @@ calib_params = Dict(
     :prop_h=>0.55,#[0.3,0.5,0.7],
     :env_amen_h=>0.56,#[0.3,0.5,0.7],
     :penalty=>0.57,
-    :flood_coefficient=>0.58,#[0.3,0.5,0.7],
-    :seed=>collect(range(1000,6912999))
+    :flood_coefficient=>0.58 #[0.3,0.5,0.7],
+    
 )
 
 

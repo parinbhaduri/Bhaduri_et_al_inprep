@@ -12,11 +12,11 @@ include(joinpath(dirname(@__DIR__), "src", "config_parallel.jl"))
 ##For Property Utility Coef
 
 prop_params_high = Dict(
-    :flood_rec => synth_flood_record,
-    :build_inc_perc=>0.5,
-    :perc_growth => 0.03,
-    :risk_averse=>0.1,
-    :base_move=>0.04,
+    :flood_rec => phil_flood_record,
+    :risk_averse=>0.7,
+    :build_inc_perc=>0.4,
+    :perc_growth => 0.01,
+    :base_move=>0.03,
     :prop_l=>0.5, :env_amen_l=>0.5, 
     :prop_m=>0.5, :env_amen_m=>0.5, 
     :prop_h=>[0,0.1,0.3,0.5,0.7,0.9,10], :env_amen_h=>0.5,
@@ -28,11 +28,11 @@ prop_params_high = Dict(
 adf_high_prop,mdf_high_prop = paramscan(prop_params_high, phil_model; parallel=true, showprogress=true, adata=simul_adata, mdata = simul_mdata, n=39)
 
 prop_params_med = Dict(
-    :flood_rec => synth_flood_record,
-    :risk_averse=>0.1,
-    :build_inc_perc=>0.5,
-    :perc_growth => 0.03,
-    :base_move=>0.04,
+    :flood_rec => phil_flood_record,
+    :risk_averse=>0.7,
+    :build_inc_perc=>0.4,
+    :perc_growth => 0.01,
+    :base_move=>0.03,
     :prop_l=>0.5, :env_amen_l=>0.5, 
     :prop_m=>[0,0.1,0.3,0.5,0.7,0.9,10], :env_amen_m=>0.5, 
     :prop_h=>0.5, :env_amen_h=>0.5,
@@ -45,11 +45,11 @@ adf_med_prop,mdf_med_prop = paramscan(prop_params_med, phil_model; parallel=true
 
 
 prop_params_low = Dict(
-    :flood_rec => synth_flood_record,
-    :risk_averse=>0.1,
-    :build_inc_perc=>0.5,
-    :perc_growth => 0.03,
-    :base_move=>0.04,
+    :flood_rec => phil_flood_record,
+    :risk_averse=>0.7,
+    :build_inc_perc=>0.4,
+    :perc_growth => 0.01,
+    :base_move=>0.03,
     :prop_l=>[0,0.1,0.3,0.5,0.7,0.9,10], :env_amen_l=>0.5, 
     :prop_m=>0.5, :env_amen_m=>0.5, 
     :prop_h=>0.5, :env_amen_h=>0.5,
@@ -62,11 +62,11 @@ adf_low_prop,mdf_low_prop = paramscan(prop_params_low, phil_model; parallel=true
 
 ## For Env. Amenities ##
 env_params_high = Dict(
-    :flood_rec => synth_flood_record,
-    :risk_averse=>0.1,
-    :build_inc_perc=>0.5,
-    :perc_growth => 0.03,
-    :base_move=>0.04,
+    :flood_rec => phil_flood_record,
+    :risk_averse=>0.7,
+    :build_inc_perc=>0.4,
+    :perc_growth => 0.01,
+    :base_move=>0.03,
     :prop_l=>0.5, :env_amen_l=>0.5, 
     :prop_m=>0.5, :env_amen_m=>0.5, 
     :prop_h=>0.5, :env_amen_h=>[0,0.1,0.3,0.5,0.7,0.9,10],
@@ -78,11 +78,11 @@ env_params_high = Dict(
 adf_high_env,mdf_high_env = paramscan(env_params_high, phil_model; parallel=true, showprogress=true, adata=simul_adata, mdata = simul_mdata, n=39)
 
 env_params_med = Dict(
-    :flood_rec => synth_flood_record,
-    :risk_averse=>0.1,
-    :build_inc_perc=>0.5,
-    :perc_growth => 0.03,
-    :base_move=>0.04,
+    :flood_rec => phil_flood_record,
+    :risk_averse=>0.7,
+    :build_inc_perc=>0.4,
+    :perc_growth => 0.01,
+    :base_move=>0.03,
     :prop_l=>0.5, :env_amen_l=>0.5, 
     :prop_m=>0.5, :env_amen_m=>[0,0.1,0.3,0.5,0.7,0.9,10], 
     :prop_h=>0.5, :env_amen_h=>0.5,
@@ -95,11 +95,11 @@ adf_med_env,mdf_med_env = paramscan(env_params_med, phil_model; parallel=true, s
 
 
 env_params_low = Dict(
-    :flood_rec => synth_flood_record,
-    :risk_averse=>0.1,
-    :build_inc_perc=>0.5,
-    :perc_growth => 0.03,
-    :base_move=>0.04,
+    :flood_rec => phil_flood_record,
+    :risk_averse=>0.7,
+    :build_inc_perc=>0.4,
+    :perc_growth => 0.01,
+    :base_move=>0.03,
     :prop_l=>0.5, :env_amen_l=>[0,0.1,0.3,0.5,0.7,0.9,10], 
     :prop_m=>0.5, :env_amen_m=>0.5, 
     :prop_h=>0.5, :env_amen_h=>0.5,

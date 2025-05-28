@@ -73,6 +73,7 @@ calib_params_2 = OrderedDict(
 
 
 calib_params_3 = OrderedDict(
+    :seed=>collect(range(1400,1499)),
     :risk_averse=>[0.3,0.7], #0.5,
     :build_inc_perc=>[0.1, 0.4], #0.25,
     :price_inc_perc=>[0.1, 0.2], #could reduce to two
@@ -85,17 +86,15 @@ calib_params_3 = OrderedDict(
     :prop_h=>[0.25, 0.75],
     :env_amen_h=>[0.25, 0.75],
     :penalty=>[0.25, 0.75],#[0.25, 0.75],
-    :flood_coefficient=>[0.25, 0.75],
-    :seed=>collect(range(1400,1499))
+    :flood_coefficient=>[0.25, 0.75]
 )
-
 
 #Calculate parameter combinations
 total_runs = length(Iterators.product(values(calib_params_1)...)) + length(Iterators.product(values(calib_params_2)...)) + length(Iterators.product(values(calib_params_3)...))
 println("Number of Model Runs: ",total_runs)
 flush(stdout)
-
-
+length(Iterators.product(values(calib_params_1)...))
+#Create 
 ##Run Models. Collect Data
 println("Runnning Part 1 (Seeds 1000 to 1199)...")
 adf_calib_1, mdf_calib_1 = ModelRuns(calib_params_1)
