@@ -9,9 +9,14 @@ using Plots
 using Plots.PlotMeasures
 using CSV, DataFrames
 
+using CairoMakie
+using StatsPlots
+
 #Read in Data
 par_combs = DataFrame(CSV.File(joinpath(@__DIR__,"data/param_comb_initial.csv")))
 sim_outputs = DataFrame(CSV.File(joinpath(@__DIR__,"data/calib_sim_output.csv")))
+
+phil_obs = DataFrame(CSV.File(joinpath(dirname(pwd()), "philadelphia-data","model_inputs", "calibration", "phil_obs_df.csv")))
 
 param_cols = ["env_amen_l","price_inc_perc","rhea_coef","base_move",
 "prop_l","prop_m","env_amen_m","risk_averse","build_inc_perc",
@@ -36,6 +41,16 @@ for col in param_cols
 end
 results
 
+### Plot Distributions of Avg variances
+stacked_df = stack(par_combs, [:var_l, :var_m, :var_h])
+p = Plots.plot(size = (1000, 750), layout=(1,1), dpi = 300, plot_title = "Outputs by parameter")
+
+StatsPlots.boxplot(p, repeat(["Med Income"], length(par_combs.var_m)), par_combs.var_m, outliers = true)
+StatsPlots.boxplot(p, stacked_df.variable, stacked_df.value, outliers = false)
+
+
+
+
 ### Plot Distributions of outputs across different parameter combinations
 function output_spread(param_col)
     p_low = Plots.plot(size = (1000, 750), layout=(2, 2), dpi = 300, plot_title = "Outputs by parameter : $(param_col)")
@@ -47,53 +62,61 @@ function output_spread(param_col)
 
     #For Low Income Populations
     histogram!(p_low[1], df_low.pop_prop_low, alpha = 0.5, label="Low Value", fill = true,
-    legend_foreground_color = :transparent, left_margin = 5mm, bottom_margin = 5mm)
-    histogram!(p_low[1], df_high.pop_prop_low, alpha = 0.5, label = "High Value", fill = true)
+    normalize = :density, legend_foreground_color = :transparent, left_margin = 5mm, bottom_margin = 5mm)
+    histogram!(p_low[1], df_high.pop_prop_low, alpha = 0.5, label = "High Value", fill = true, normalize = :density)
+    vline!(p_low[1], phil_obs[!,"LOW_INC_PROP"], lw=3, label = "Observation")
     Plots.ylabel!(p_low[1], "Count"; yguidefontsize=10)
     Plots.xlabel!(p_low[1], "Proportion of Low Inc. Population"; xguidefontsize=10)
 
     histogram!(p_low[2], df_low.pop_growth_low, alpha = 0.5, label="Low Value", fill = true,
-    legend_foreground_color = :transparent, left_margin = 5mm, bottom_margin = 5mm)
-    histogram!(p_low[2], df_high.pop_growth_low, alpha = 0.5, label = "High Value", fill = true)
+    normalize = :density, legend_foreground_color = :transparent, left_margin = 5mm, bottom_margin = 5mm)
+    histogram!(p_low[2], df_high.pop_growth_low, alpha = 0.5, label = "High Value", fill = true, normalize = :density)
+    vline!(p_low[2], phil_obs[!,"LOW_INC_CHNG"], lw=3, label = "Observation")
     Plots.ylabel!(p_low[2], "Count"; yguidefontsize=10)
     Plots.xlabel!(p_low[2], "Pop Growth of Low Inc. Population"; xguidefontsize=10)
 
     histogram!(p_low[3], df_low.moved_prop_low, alpha = 0.5, label="Low Value", fill = true,
-    legend_foreground_color = :transparent, left_margin = 5mm, bottom_margin = 5mm)
-    histogram!(p_low[3], df_high.moved_prop_low, alpha = 0.5, label = "High Value", fill = true)
+    normalize = :density, legend_foreground_color = :transparent, left_margin = 5mm, bottom_margin = 5mm)
+    histogram!(p_low[3], df_high.moved_prop_low, alpha = 0.5, label = "High Value", fill = true, normalize = :density)
+    vline!(p_low[3], phil_obs[!,"LOW_SALE_PROP"], lw=3, label = "Observation")
     Plots.ylabel!(p_low[3], "Count"; yguidefontsize=10)
     Plots.xlabel!(p_low[3], "Proportion of Low Inc. Housing Transactions"; xguidefontsize=10)
 
     histogram!(p_low[4], df_low.price_growth_low[df_low.price_growth_low .< 5], alpha = 0.5, label="Low Value", fill = true,
-    legend_foreground_color = :transparent, left_margin = 5mm, bottom_margin = 5mm)
-    histogram!(p_low[4], df_high.price_growth_low[df_high.price_growth_low .< 5], alpha = 0.5, label = "High Value", fill = true)
+    normalize = :density, legend_foreground_color = :transparent, left_margin = 5mm, bottom_margin = 5mm)
+    histogram!(p_low[4], df_high.price_growth_low[df_high.price_growth_low .< 5], alpha = 0.5, label = "High Value", fill = true, normalize = :density)
+    vline!(p_low[4], phil_obs[!,"LOW_SALE_GROWTH"], lw=3, label = "Observation")
     Plots.ylabel!(p_low[4], "Count"; yguidefontsize=10)
     Plots.xlabel!(p_low[4], "Price Growth of Low Inc. Housing"; xguidefontsize=10)
 
     #For High Income Populations
     histogram!(p_high[1], df_low.pop_prop_high, alpha = 0.5, label="Low Value", fill = true,
-    legend_foreground_color = :transparent, left_margin = 5mm, bottom_margin = 5mm)
-    histogram!(p_high[1], df_high.pop_prop_high, alpha = 0.5, label = "High Value", fill = true)
+    normalize = :density, legend_foreground_color = :transparent, left_margin = 5mm, bottom_margin = 5mm)
+    histogram!(p_high[1], df_high.pop_prop_high, alpha = 0.5, label = "High Value", fill = true, normalize = :density)
+    vline!(p_high[1], phil_obs[!,"HIGH_INC_PROP"], lw=3, label = "Observation")
     Plots.ylabel!(p_high[1], "Count"; yguidefontsize=10)
-    Plots.xlabel!(p_high[1], "Proportion of Low Inc. Population"; xguidefontsize=10)
+    Plots.xlabel!(p_high[1], "Proportion of High Inc. Population"; xguidefontsize=10)
 
     histogram!(p_high[2], df_low.pop_growth_high, alpha = 0.5, label="Low Value", fill = true,
-    legend_foreground_color = :transparent, left_margin = 5mm, bottom_margin = 5mm)
-    histogram!(p_high[2], df_high.pop_growth_high, alpha = 0.5, label = "High Value", fill = true)
+    normalize = :density, legend_foreground_color = :transparent, left_margin = 5mm, bottom_margin = 5mm)
+    histogram!(p_high[2], df_high.pop_growth_high, alpha = 0.5, label = "High Value", fill = true, normalize = :density)
+    vline!(p_high[2], phil_obs[!,"HIGH_INC_CHNG"], lw=3, label = "Observation")
     Plots.ylabel!(p_high[2], "Count"; yguidefontsize=10)
-    Plots.xlabel!(p_high[2], "Pop Growth of Low Inc. Population"; xguidefontsize=10)
-
+    Plots.xlabel!(p_high[2], "Pop Growth of High Inc. Population"; xguidefontsize=10)
+    
     histogram!(p_high[3], df_low.moved_prop_high, alpha = 0.5, label="Low Value", fill = true,
-    legend_foreground_color = :transparent, left_margin = 5mm, bottom_margin = 5mm)
-    histogram!(p_high[3], df_high.moved_prop_high, alpha = 0.5, label = "High Value", fill = true)
+    normalize = :density, legend_foreground_color = :transparent, left_margin = 5mm, bottom_margin = 5mm)
+    histogram!(p_high[3], df_high.moved_prop_high, alpha = 0.5, label = "High Value", fill = true, normalize = :density)
+    vline!(p_high[3], phil_obs[!,"HIGH_SALE_PROP"], lw=3, label = "Observation")
     Plots.ylabel!(p_high[3], "Count"; yguidefontsize=10)
-    Plots.xlabel!(p_high[3], "Proportion of Low Inc. Housing Transactions"; xguidefontsize=10)
+    Plots.xlabel!(p_high[3], "Proportion of High Inc. Housing Transactions"; xguidefontsize=10)
 
     histogram!(p_high[4],  df_low.price_growth_high[df_low.price_growth_high .< 5], alpha = 0.5, label="Low Value", fill = true,
-    legend_foreground_color = :transparent, left_margin = 5mm, bottom_margin = 5mm)
-    histogram!(p_high[4],  df_high.price_growth_high[df_high.price_growth_high .< 5], alpha = 0.5, label = "High Value", fill = true)
+    normalize = :density, legend_foreground_color = :transparent, left_margin = 5mm, bottom_margin = 5mm)
+    histogram!(p_high[4],  df_high.price_growth_high[df_high.price_growth_high .< 5], alpha = 0.5, label = "High Value", fill = true, normalize = :density)
+    vline!(p_high[4], phil_obs[!,"HIGH_SALE_GROWTH"], lw=3, label = "Observation")
     Plots.ylabel!(p_high[4], "Count"; yguidefontsize=10)
-    Plots.xlabel!(p_high[4], "Price Growth of Low Inc. Housing"; xguidefontsize=10)
+    Plots.xlabel!(p_high[4], "Price Growth of High Inc. Housing"; xguidefontsize=10)
     
     return p_low, p_high
 end
