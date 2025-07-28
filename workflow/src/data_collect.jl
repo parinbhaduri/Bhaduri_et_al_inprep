@@ -80,7 +80,7 @@ pop_exposed_high(model) = pop_exposed(model, 3)
 
 #Simulation Studies data collection
 simul_adata = [(hh_low, sum, HH), (hh_med, sum, HH), (hh_high, sum, HH), (hh_diff_low, sum, HH), (hh_diff_med, sum, HH), (hh_diff_high, sum, HH), 
-    (occ_low, sum, BG), (occ_med, sum, BG), (occ_high, sum, BG), (price_low, mean, BG), (price_med, mean, BG), (price_high, mean, BG)
+    (occ_low, sum, BG), (occ_med, sum, BG), (occ_high, sum, BG), (price_low, mean, BG), (price_med, mean, BG), (price_high, mean, BG), (:flood_hazard,mean,FL_BG)
 ]
 simul_mdata = [moved_low, moved_med, moved_high, moved_diff_low, moved_diff_med, moved_diff_high]
 

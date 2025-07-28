@@ -5,47 +5,105 @@ Pkg.instantiate()
 
 using CSV, DataFrames
 using Statistics
+using ProgressMeter
 
 include(joinpath(dirname(@__DIR__), "src", "functions.jl"))
 
-#read in simulated output data
-simul_outputs = DataFrame(CSV.File(joinpath(@__DIR__,"data/calib_sim_output.csv")))
-#Separate by agent categories
-param_cols = ["env_amen_l","price_inc_perc","rhea_coef","base_move",
-"prop_l","prop_m","env_amen_m","risk_averse","build_inc_perc",
-"env_amen_h","flood_coefficient","penalty","prop_h"]
+##Set constants
+threshold = 25.0
+max_iterations = 10
 
+params_df = DataFrame(CSV.File(joinpath(@__DIR__, "data/param_comb_initial.csv")))
 
-sim_out_low = select(simul_outputs, r"_low")
-sim_out_med = select(simul_outputs, r"_med")
-sim_out_high = select(simul_outputs, r"_high")
+###History Matching
+hm_df = copy(params_df)
+initial_combs = nrow(hm_df)
+iteration = 1
 
-#Create df to hold param combinations
-params_df = unique(select(simul_outputs, param_cols))
+println("Starting History Matching with $(initial_combs) parameter combinations")
 
-#Calculate average variance among ensembles
-params_df[!, :var_l] = zeros(size(params_df)[1])
-params_df[!, :var_m] = zeros(size(params_df)[1])
-params_df[!, :var_h] = zeros(size(params_df)[1])
+println("Threshold factor (c): $threshold")
+println("Max iterations: $max_iterations")
+println()
 
+while iteration ≤ max_iterations
+    ##Calculate average error across all combinations
+    m_disc = mean(Matrix(select(hm_df,r"err_")), dims = 1)#[1,:]
+    ##Calculate average variance across all combinations
+    ens_var = mean(Matrix(select(hm_df,r"var_")), dims = 1)#[1,:]
 
-for (i,group) in enumerate(groupby(simul_outputs, param_cols))
-    sim_out_low = select(group, r"_low")
-    sim_out_med = select(group, r"_med")
-    sim_out_high = select(group, r"_high")
+    total_var = m_disc.^2 .+ ens_var.^2
+    ##For every combination, calculate the implausibility score for each category
+    imp_cat_scores = Matrix(select(hm_df,r"err_")) ./ total_var
+    imp_scores = maximum(imp_cat_scores, dims=2)
+    #Check which combs are below threshold
+    imp_mask = imp_scores .< threshold
+    #Filter param set to non-implausible combinations
+    new_df = hm_df[imp_mask[:,1],:]
 
-    params_df[i, :var_l] = calc_var(sim_out_low)
-    params_df[i, :var_m] = calc_var(sim_out_med)
-    params_df[i, :var_h] = calc_var(sim_out_high)
+    #Calculate stats for this wave
+    n_before = nrow(hm_df)
+    n_after = nrow(new_df)
+    reduction_factor = n_after / n_before
+    max_implausibility = maximum(imp_scores)
+    min_implausibility = minimum(imp_scores)
+
+    #= Store wave statistics
+    wave_stats = (
+        wave = iteration,
+        n_before = n_before,
+        n_after = n_after,
+        reduction_factor = reduction_factor,
+        max_implausibility = max_implausibility,
+        min_implausibility = min_implausibility,
+        n_implausible = sum(.!non_implausible_mask)
+    )
+    push!(wave_statistics, wave_stats)
+    =#
+    println("Parameter combinations before filtering: $n_before")
+    println("Parameter combinations after filtering: $n_after")
+    println("Reduction factor: $(round(reduction_factor, digits=4))")
+    println("Implausibility range: [$(round(min_implausibility, digits=4)), $(round(max_implausibility, digits=4))]")
+    println("Implausible combinations removed: $(sum(.!imp_mask))")
+    println()
+
+    ##Check if stopping criteria is met
+    if n_after == 0
+        println("✓ No non-implausible parameter combinations found. Stopping.")
+        break
+    elseif all(imp_mask)
+        println("✓ All parameter combinations are non-implausible. Stopping.")
+        break
+    elseif iteration > max_iterations
+        println("✓ Maximum iterations ($max_iterations) reached. Stopping.")
+        break
+    end
+
+    #Update for new wave/iteration
+    hm_df = new_df
+    println("Proceeding to next wave with $(nrow(hm_df)) combinations...")
+    iteration += 1
 end
 
-#Save intermediate df
-CSV.write(joinpath(@__DIR__, "data/param_comb_initial.csv"), params_df)
 
 
-#Calculate errors for each model ensemble
-@chain simul_outputs begin
-    @groupby(param_cols)
-    @select(r"_low")
-    @transform()
-end
+# Calculate final statistics
+final_stats = (
+    total_waves = min(iteration, max_iterations),
+    initial_combinations = initial_combs,
+    final_combinations = nrow(hm_df),
+    overall_reduction_factor = nrow(hm_df) / initial_combs,
+    final_acceptance_rate = nrow(hm_df) / initial_combs * 100
+)
+    
+println("=== Final Results ===")
+println("Total waves completed: $(final_stats.total_waves)")
+println("Initial parameter combinations: $(final_stats.initial_combinations)")
+println("Final non-implausible combinations: $(final_stats.final_combinations)")
+println("Overall reduction factor: $(round(final_stats.overall_reduction_factor, digits=4))")
+println("Final acceptance rate: $(round(final_stats.final_acceptance_rate, digits=2))%")
+println()
+
+
+#Save calibrated df
+CSV.write(joinpath(@__DIR__, "data/param_comb_final.csv"), hm_df)

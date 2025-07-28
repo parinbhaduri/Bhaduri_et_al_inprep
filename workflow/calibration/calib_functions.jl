@@ -25,14 +25,13 @@ phil_flood_record = unstack(phil_flood, :GEOID, :year, :perc_flood_extent)
 phil_flood_record[!,"1982"] = zeros(size(phil_flood_record)[1])
 select!(phil_flood_record, "GEOID", "1981", "1982", Not(["1982", "2019"]), "2019")
 
-
 phil_dict, phil_matrix = CHANCE_C.flood_history(phil_flood_record; no_of_years = Int(39), start_year = Int(1981))
 
 
 
 
 ###Functions
-function PhilABM(;bg_df = phil_bg, pop_df = phil_cbsa_base_pop, f_dict = phil_dict, f_matrix = phil_matrix,
+function PhilABM(;bg_df = phil_bg, pop_df = phil_cbsa_base_pop, f_df = phil_flood_record,
     perc_growth=0.01, flood_coefficient=0.5, risk_averse=0.5, flood_mem=10, base_move=0.01, build_inc_perc=0.10, price_inc_perc=0.10,
     penalty=0.5, house_budget_mode="rhea", rhea_coef = 0.7, house_budget_perc=0.33, dist_param = [0.3, 0.4, 0.3],
     prop_l=0.5, env_amen_l=0.5, prop_m=0.5, env_amen_m=0.5, prop_h=0.5, env_amen_h=0.5, seed=seed
@@ -43,16 +42,15 @@ function PhilABM(;bg_df = phil_bg, pop_df = phil_cbsa_base_pop, f_dict = phil_di
     util_coef = Dict(1=>util_low, 2=>util_med, 3=>util_high)
 
 
-    model = Simulator(bg_df, pop_df, f_dict, f_matrix, CHANCE_C.model_step!;
-        no_of_years = Int(39), no_hhs_per_agent = 10, house_budget_mode = house_budget_mode,
+    model = Simulator(bg_df, pop_df, f_df, CHANCE_C.model_step!;
+        start_year = Int(1981), no_of_years = Int(39), no_hhs_per_agent = 10, house_budget_mode = house_budget_mode,
         house_choice_mode = "flood_ind_utility", grouped = true, group_col = "adj_income_2019",
         hh_budget_perc = house_budget_perc, rhea_coef = rhea_coef, bg_cat = Dict(:col =>"income_cat", :group => [1,2,3]),
         cutoff_dict = OrderedDict(1 => [-60000.00,25000.00], 2 =>[25000.00,75000.00], 3 =>[75000.00, 1e7]),
         simple_anova_coefficients = util_coef, flood_coefficient = flood_coefficient, dist_param = dist_param,
-        penalty = penalty, pop_growth_perc = perc_growth, perc_move = base_move, stock_increase_perc = build_inc_perc,
+        standardization = "min-max",penalty = penalty, pop_growth_perc = perc_growth, perc_move = base_move, stock_increase_perc = build_inc_perc,
         price_increase_perc = price_inc_perc, risk_averse = risk_averse, flood_mem = flood_mem, seed = Int(seed)
     )
-
 
     return model
 end

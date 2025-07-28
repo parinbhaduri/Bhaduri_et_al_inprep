@@ -73,7 +73,55 @@ params_df = innerjoin(model_params_df, agent_params_df, on=param_cols)
 CSV.write(joinpath(@__DIR__, "data/calib_sim_output.csv"), params_df)
 
 
+#Read in philly observation data
+phil_obs = DataFrame(CSV.File(joinpath(dirname(pwd()), "philadelphia-data","model_inputs", "calibration", "phil_obs_df.csv")))
+select!(phil_obs, r"_SALE_PROP", r"_INC_PROP", r"_INC_CHNG", r"_SALE_GROWTH")
 
+phil_obs_low = select(phil_obs, r"^(?!.*VAR).*LOW")
+phil_obs_med = select(phil_obs, r"^(?!.*VAR).*MED")
+phil_obs_high = select(phil_obs, r"^(?!.*VAR).*HIGH")
+
+#read in simulated output data
+simul_outputs = DataFrame(CSV.File(joinpath(@__DIR__,"data/calib_sim_output.csv")))
+#Separate by agent categories
+param_cols = ["env_amen_l","price_inc_perc","rhea_coef","base_move",
+"prop_l","prop_m","env_amen_m","risk_averse","build_inc_perc",
+"env_amen_h","flood_coefficient","penalty","prop_h"]
+
+
+sim_out_low = select(simul_outputs, r"_low")
+sim_out_med = select(simul_outputs, r"_med")
+sim_out_high = select(simul_outputs, r"_high")
+
+#Create df to hold param combinations
+params_df = unique(select(simul_outputs, param_cols))
+
+###Calculate average error and average variance among ensembles
+params_df[!, :err_l] = zeros(size(params_df)[1])
+params_df[!, :err_m] = zeros(size(params_df)[1])
+params_df[!, :err_h] = zeros(size(params_df)[1])
+
+params_df[!, :var_l] = zeros(size(params_df)[1])
+params_df[!, :var_m] = zeros(size(params_df)[1])
+params_df[!, :var_h] = zeros(size(params_df)[1])
+
+
+@showprogress for (i,group) in enumerate(groupby(simul_outputs, param_cols))
+    sim_out_low = select(group, r"_low")
+    sim_out_med = select(group, r"_med")
+    sim_out_high = select(group, r"_high")
+
+    params_df[i, :err_l] = calc_err(sim_out_low; obs = Matrix(phil_obs_low)[1,:])
+    params_df[i, :err_m] = calc_err(sim_out_med; obs = Matrix(phil_obs_med)[1,:])
+    params_df[i, :err_h] = calc_err(sim_out_high; obs = Matrix(phil_obs_high)[1,:])
+
+    params_df[i, :var_l] = calc_var(sim_out_low)
+    params_df[i, :var_m] = calc_var(sim_out_med)
+    params_df[i, :var_h] = calc_var(sim_out_high)
+end
+
+#Save intermediate df
+CSV.write(joinpath(@__DIR__, "data/param_comb_initial.csv"), params_df)
 
 
 

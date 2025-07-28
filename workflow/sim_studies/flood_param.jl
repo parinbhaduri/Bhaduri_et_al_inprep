@@ -7,6 +7,15 @@ Pkg.instantiate()
 ### PARALLEL ENSEMBLE RUN ###
 include(joinpath(dirname(@__DIR__), "src", "config_parallel.jl"))
 
+#Create alternate Flood scenarios
+@everywhere begin
+    flpn_bgs = phil_bg[phil_bg.perc_flpn_area .> 0,:]
+
+    fr1 = copy(synth_flood_record)
+
+    fr1[fr1.GEOID .∈ Ref(flpn_bgs.GEOID), "1982"] .= 0.5
+end
+
 @everywhere function phil_averse(;flood_rec = phil_flood_record, risk_averse=risk_averse, no_of_years=no_of_years, start_year=start_year, seed=seed)
     model = phil_model(;flood_rec = flood_rec, no_of_years=Int(no_of_years), start_year=Int(start_year), risk_averse=risk_averse, seed=seed)      
     return model
@@ -54,3 +63,7 @@ mem_plots = simul_plot(adf_mem, :flood_mem, color = palette(:Blues_8), lim = (70
 plot(mem_plots..., layout=(3, 2), size = (1100, 1000), plot_title = "Pop. Dynamics when changing Flood Mem")
 mem_mark_plots = simul_market(adf_mem,mdf_mem, :flood_mem; leg = :outertopright, color = palette(:Blues_8), price_lim =(1e5,1e6))
 plot(mem_mark_plots..., layout=(3, 2), size = (1100, 1000), plot_title = "Market Dynamics when changing Flood Mem")
+
+
+##Plot flood memory of floodplain
+plot(adf_mem.time, adf_mem.mean_flood_hazard_FL_BG, group = adf_mem[:,:flood_mem], legend=:outertopright, lw=2, title="Flood Memory in Floodplain", dpi=300)
