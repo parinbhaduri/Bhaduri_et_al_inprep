@@ -39,8 +39,8 @@ end
 calib_params = OrderedDict(
     :seed=>collect(range(1000,1499)),
     :risk_averse=>[0.3,0.7], #0.5,
-    :build_inc_perc=>[0.1, 0.4], #0.25,
-    :price_inc_perc=>[0.1, 0.2], #could reduce to two
+    :build_inc_perc=>[0.01, 0.02], #0.25,
+    :price_inc_perc=>[0.01, 0.02], #
     :rhea_coef=>[0.65, 0.75],
     :base_move=>[0.01,0.03], #0.02,
     :prop_l=>[0.25, 0.75],

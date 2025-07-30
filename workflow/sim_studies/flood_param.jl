@@ -56,7 +56,7 @@ include("sim_functions.jl")
 
 averse_plots = simul_plot(adf_averse, :risk_averse; leg = :outertopright, color = palette(:BrBG_6), lim = (7000,15000))
 plot(averse_plots..., layout=(3, 2), size = (1100, 1000), plot_title = "Pop. Dynamics when changing R_A")
-averse_mark_plots = simul_market(adf_averse,mdf_averse, :risk_averse; leg = :outertopright, color = palette(:BrBG_6), price_lim =(1e5,1e6))
+averse_mark_plots = simul_market(adf_averse,mdf_averse, :risk_averse; leg = :outertopright, color = palette(:BrBG_6), lim = (0,1000), price_lim =(1e5,1e6))
 plot(averse_mark_plots..., layout=(3, 2), size = (1100, 1000), plot_title = "Market Dynamics when changing R_A")
 
 mem_plots = simul_plot(adf_mem, :flood_mem, color = palette(:Blues_8), lim = (7000,15000))
