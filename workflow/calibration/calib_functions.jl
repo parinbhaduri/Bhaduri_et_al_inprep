@@ -2,7 +2,7 @@
 ###Data
 # Calculate Flood matrix and Dict for ABM input
 data_location = "philadelphia-data/model_inputs"
-bg_file = "phil_flood_bg_2019_v1.csv"
+bg_file = "phil_flood_bg_2019_nomiss_v1.csv"
 pop_file = "philly_cbsa_pop_0.csv"
 flood_file = "phil_flood_hist_year.csv"
 

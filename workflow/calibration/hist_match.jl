@@ -10,11 +10,13 @@ using ProgressMeter
 include(joinpath(dirname(@__DIR__), "src", "functions.jl"))
 
 ##Set constants
-threshold = 25.0
+threshold = 3.0
 max_iterations = 10
 
-params_df = DataFrame(CSV.File(joinpath(@__DIR__, "data/param_comb_initial.csv")))
+params_df = DataFrame(CSV.File(joinpath(@__DIR__, "data/param_comb_initial_135842.csv")))
 
+phil_obs = DataFrame(CSV.File(joinpath(dirname(pwd()), "philadelphia-data","model_inputs", "calibration", "phil_obs_df.csv")))
+obs_var = Matrix(select!(phil_obs, r"_VAR"))
 ###History Matching
 hm_df = copy(params_df)
 initial_combs = nrow(hm_df)
@@ -25,17 +27,19 @@ println("Starting History Matching with $(initial_combs) parameter combinations"
 println("Threshold factor (c): $threshold")
 println("Max iterations: $max_iterations")
 println()
-
+mean(Matrix(select(hm_df,r"err_")), dims = 1)
+mean(Matrix(select(hm_df,r"var_")), dims = 1)
+#m_disc.^2 .+ ens_var.^2 .+ obs_var.^2
 while iteration ≤ max_iterations
     ##Calculate average error across all combinations
     m_disc = mean(Matrix(select(hm_df,r"err_")), dims = 1)#[1,:]
     ##Calculate average variance across all combinations
     ens_var = mean(Matrix(select(hm_df,r"var_")), dims = 1)#[1,:]
 
-    total_var = m_disc.^2 .+ ens_var.^2
+    total_var = m_disc.^2 .+ ens_var.^2 .+ obs_var.^2
     ##For every combination, calculate the implausibility score for each category
     imp_cat_scores = Matrix(select(hm_df,r"err_")) ./ total_var
-    imp_scores = maximum(imp_cat_scores, dims=2)
+    imp_scores = mean(imp_cat_scores, dims=2)
     #Check which combs are below threshold
     imp_mask = imp_scores .< threshold
     #Filter param set to non-implausible combinations
@@ -106,4 +110,4 @@ println()
 
 
 #Save calibrated df
-CSV.write(joinpath(@__DIR__, "data/param_comb_final.csv"), hm_df)
+CSV.write(joinpath(@__DIR__, "data/param_comb_final_135842_mean_thresh_3.csv"), hm_df)

@@ -5,10 +5,12 @@ Pkg.instantiate()
 
 using CSV, DataFrames
 using DataFramesMeta
+using ProgressMeter
 
 #Load data
 #t_d = DataFrame(CSV.File(joinpath(@__DIR__,"data/results_118418/agents_chunk_2.csv")))
-dat_dir =joinpath(@__DIR__,"data/results_118418/")
+JOB_NO = 135842
+dat_dir =joinpath(@__DIR__,"data/results_$(JOB_NO)/")
 
 param_cols = ["env_amen_l","price_inc_perc","rhea_coef","base_move",
 "prop_l","prop_m","env_amen_m","risk_averse","build_inc_perc",
@@ -36,7 +38,7 @@ for file in model_files
     df = nothing
 end
 
-params_seeds_df
+#params_seeds_df
 
 for file in agent_files
     df = DataFrame(CSV.File(joinpath(dat_dir,file)))
@@ -70,9 +72,14 @@ end
 
 params_df = innerjoin(model_params_df, agent_params_df, on=param_cols)
 
-CSV.write(joinpath(@__DIR__, "data/calib_sim_output.csv"), params_df)
+CSV.write(joinpath(@__DIR__, "data/calib_sim_output_$(JOB_NO).csv"), params_df)
 
 
+
+
+
+### Model Discrepancy and Ensemble Variance calculation ###
+include(joinpath(dirname(@__DIR__),"src", "functions.jl"))
 #Read in philly observation data
 phil_obs = DataFrame(CSV.File(joinpath(dirname(pwd()), "philadelphia-data","model_inputs", "calibration", "phil_obs_df.csv")))
 select!(phil_obs, r"_SALE_PROP", r"_INC_PROP", r"_INC_CHNG", r"_SALE_GROWTH")
@@ -82,11 +89,12 @@ phil_obs_med = select(phil_obs, r"^(?!.*VAR).*MED")
 phil_obs_high = select(phil_obs, r"^(?!.*VAR).*HIGH")
 
 #read in simulated output data
-simul_outputs = DataFrame(CSV.File(joinpath(@__DIR__,"data/calib_sim_output.csv")))
+simul_outputs = DataFrame(CSV.File(joinpath(@__DIR__,"data/calib_sim_output_$(JOB_NO).csv")))
 #Separate by agent categories
 param_cols = ["env_amen_l","price_inc_perc","rhea_coef","base_move",
-"prop_l","prop_m","env_amen_m","risk_averse","build_inc_perc",
-"env_amen_h","flood_coefficient","penalty","prop_h"]
+        "prop_l","prop_m","env_amen_m","risk_averse","build_inc_perc",
+        "env_amen_h","flood_coefficient","penalty","prop_h"
+]
 
 
 sim_out_low = select(simul_outputs, r"_low")
@@ -121,7 +129,7 @@ params_df[!, :var_h] = zeros(size(params_df)[1])
 end
 
 #Save intermediate df
-CSV.write(joinpath(@__DIR__, "data/param_comb_initial.csv"), params_df)
+CSV.write(joinpath(@__DIR__, "data/param_comb_initial_$(JOB_NO).csv"), params_df)
 
 
 

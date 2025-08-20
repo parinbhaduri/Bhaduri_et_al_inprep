@@ -11,9 +11,9 @@ include(joinpath(dirname(@__DIR__), "src", "config_parallel.jl"))
 penal_params = Dict(
     :flood_rec => phil_flood_record,
     :risk_averse=>0.7,
-    :build_inc_perc=>0.4,
+    :build_inc_perc=>0.01,
     :perc_growth => 0.01,
-    :base_move=>0.03,
+    :base_move=>0.01,
     #:penalty=>push!(collect(range(0.0,1000,step=100)), 10000000.0),
     :penalty=>[0,0.1,0.3,0.5,0.7,0.9,10],
     :no_of_years=>39,
@@ -28,9 +28,9 @@ adf_penal,mdf_penal = paramscan(penal_params, phil_model; parallel=true, showpro
 disam_params = Dict(
     :flood_rec => phil_flood_record,
     :risk_averse=>0.7,
-    :build_inc_perc=>0.4,
+    :build_inc_perc=>0.01,
     :perc_growth => 0.01,
-    :base_move=>0.03,
+    :base_move=>0.01,
     :flood_coefficient=>[0,0.1,0.3,0.5,0.7,0.9,10],
     :no_of_years=>39,
     :start_year=>1981, 

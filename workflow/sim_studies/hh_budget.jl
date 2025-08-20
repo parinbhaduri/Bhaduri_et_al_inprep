@@ -14,13 +14,13 @@ end
 
 budg_params = Dict(
     :house_budget_mode=>"rhea",
-    :rhea_coef=>collect(range(0.65,0.75,step=0.02)),
+    :rhea_coef=>collect(range(0.60,0.8,step=0.04)),
     :no_of_years=>39,
     :start_year=>1981, 
     :seed=>1500
 )
 
-adf_budg,mdf_budget = paramscan(budg_params, phil_budg; parallel=true, showprogress=true, adata=simul_adata, mdata=simul_mdata, n=39)
+adf_budg,mdf_budg = paramscan(budg_params, phil_budg; parallel=true, showprogress=true, adata=simul_adata, mdata=simul_mdata, n=39)
 
 using Plots
 using ColorSchemes
