@@ -6,6 +6,7 @@ Pkg.instantiate()
 using CSV, DataFrames
 using DataFramesMeta
 using ProgressMeter
+using Statistics
 
 #Load data
 #t_d = DataFrame(CSV.File(joinpath(@__DIR__,"data/results_118418/agents_chunk_2.csv")))
@@ -51,7 +52,7 @@ for file in agent_files
     end
     #Pop Growth and Sales Price Growth
     pop_price_change_df = @chain df begin
-        @subset((:time .== 20) .| (:time .== 39))
+        @subset((:time .== 20) .| (:time .== 38)) #based on Real Estate Data, tracking price change from 2000-2018
         @groupby(param_cols)
         @combine(:pop_growth_low = (:sum_hh_low_HH[2] - :sum_hh_low_HH[1])/:sum_hh_low_HH[1], :pop_growth_med = (:sum_hh_med_HH[2] - :sum_hh_med_HH[1])/:sum_hh_med_HH[1],
         :pop_growth_high = (:sum_hh_med_HH[2] - :sum_hh_high_HH[1])/:sum_hh_high_HH[1], :price_growth_low = (:mean_price_low_BG[2] - :mean_price_low_BG[1])/:mean_price_low_BG[1],
@@ -90,6 +91,9 @@ phil_obs_high = select(phil_obs, r"^(?!.*VAR).*HIGH")
 
 #read in simulated output data
 simul_outputs = DataFrame(CSV.File(joinpath(@__DIR__,"data/calib_sim_output_$(JOB_NO).csv")))
+#Take a subset of ensemble members
+ens_size = 250
+simul_outputs = simul_outputs[simul_outputs.seed .<= 999+ens_size,:]
 #Separate by agent categories
 param_cols = ["env_amen_l","price_inc_perc","rhea_coef","base_move",
         "prop_l","prop_m","env_amen_m","risk_averse","build_inc_perc",
@@ -129,7 +133,7 @@ params_df[!, :var_h] = zeros(size(params_df)[1])
 end
 
 #Save intermediate df
-CSV.write(joinpath(@__DIR__, "data/param_comb_initial_$(JOB_NO).csv"), params_df)
+CSV.write(joinpath(@__DIR__, "data/param_comb_initial_$(JOB_NO)_ens_250.csv"), params_df)
 
 
 

@@ -37,7 +37,7 @@ end
 
 
 calib_params = OrderedDict(
-    :seed=>collect(range(1000,1499)),
+    :seed=>collect(range(1000,1249)),
     :risk_averse=>[0.3,0.7], #0.5,
     :build_inc_perc=>[0.01, 0.02], #0.25,
     :price_inc_perc=>[0.01, 0.02], #
@@ -49,8 +49,9 @@ calib_params = OrderedDict(
     :env_amen_m=>[0.25, 0.75],
     :prop_h=>[0.25, 0.75],
     :env_amen_h=>[0.25, 0.75],
-    :penalty=>[0.25, 0.75],
-    :flood_coefficient=>[0.25, 0.75]
+    :penalty=>[0.25, 0.75, 5],
+    :flood_coefficient=>[0.25, 0.75],
+    :stay_prob=>[0.75, 1.0]
 )
 
 chunk_size = 256000  # Adjust based on memory requirements

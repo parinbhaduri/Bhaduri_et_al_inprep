@@ -26,7 +26,7 @@ end
 ###Create function to take different parameter combinations as input:
 function phil_model(; flood_rec = phil_flood_record, perc_growth=0.01, flood_coefficient=0.5, 
     risk_averse=0.5, flood_mem=10, base_move=0.01, build_inc_perc=0.010, price_inc_perc=0.010, 
-    penalty=0.5, house_budget_mode="rhea", rhea_coef = 0.7, house_budget_perc=0.33, dist_param = [0.3, 0.4, 0.3],
+    penalty=0.5, house_budget_mode="rhea", rhea_coef = 0.7, house_budget_perc=0.33, dist_param = [0.5, 0.25, 0.25],
     prop_l=0.5, env_amen_l=0.5, prop_m=0.5, env_amen_m=0.5, 
     prop_h=0.5, env_amen_h=0.5, standardization = "normal", stay_prob = 1.0,
     no_of_years=no_of_years, start_year=start_year, seed=seed

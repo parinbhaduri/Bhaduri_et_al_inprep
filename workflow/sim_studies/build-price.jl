@@ -55,7 +55,7 @@ plot(build_market_plots..., layout=(3, 2), size = (1100, 1000), plot_title = "Ma
 
 price_plots = simul_plot(adf_price, :price_perc; color = palette(:BrBG_11))
 plot(price_plots..., layout=(3, 2), size = (1100, 1000), plot_title = "Pop. Dynamics when changing Price %")
-price_market_plots = simul_market(adf_price,mdf_price, :price_perc; color = palette(:BrBG_11))
+price_market_plots = simul_market(adf_price,mdf_price, :price_perc; price_lim =(1e5,2e6), color = palette(:BrBG_11))
 plot(price_market_plots..., layout=(3, 2), size = (1100, 1000), plot_title = "Market Dynamics when changing Price %")
 
 

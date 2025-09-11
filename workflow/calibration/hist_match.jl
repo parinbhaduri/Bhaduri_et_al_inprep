@@ -10,7 +10,7 @@ using ProgressMeter
 include(joinpath(dirname(@__DIR__), "src", "functions.jl"))
 
 ##Set constants
-threshold = 3.0
+threshold = 5.0
 max_iterations = 10
 
 params_df = DataFrame(CSV.File(joinpath(@__DIR__, "data/param_comb_initial_135842.csv")))
@@ -110,4 +110,4 @@ println()
 
 
 #Save calibrated df
-CSV.write(joinpath(@__DIR__, "data/param_comb_final_135842_mean_thresh_3.csv"), hm_df)
+CSV.write(joinpath(@__DIR__, "data/param_comb_final_135842_mean_thresh_5_ens_250.csv"), hm_df)
