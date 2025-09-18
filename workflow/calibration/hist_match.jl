@@ -13,7 +13,7 @@ include(joinpath(dirname(@__DIR__), "src", "functions.jl"))
 threshold = 5.0
 max_iterations = 10
 
-params_df = DataFrame(CSV.File(joinpath(@__DIR__, "data/param_comb_initial_135842.csv")))
+params_df = DataFrame(CSV.File(joinpath(@__DIR__, "data/param_comb_initial_135842_ens_250.csv")))
 
 phil_obs = DataFrame(CSV.File(joinpath(dirname(pwd()), "philadelphia-data","model_inputs", "calibration", "phil_obs_df.csv")))
 obs_var = Matrix(select!(phil_obs, r"_VAR"))

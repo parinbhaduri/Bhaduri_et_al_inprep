@@ -29,7 +29,7 @@ select!(phil_flood_record, "GEOID", "1981", "1982", Not(["1982", "2019"]), "2019
 ###Functions
 function PhilABM(;bg_df = phil_bg, pop_df = phil_cbsa_base_pop, f_df = phil_flood_record,
     perc_growth=0.01, flood_coefficient=0.5, risk_averse=0.5, flood_mem=10, base_move=0.01, build_inc_perc=0.01, price_inc_perc=0.01,
-    penalty=0.5, house_budget_mode="rhea", rhea_coef = 0.7, house_budget_perc=0.33, dist_param = [0.5, 0.25, 0.25],
+    penalty=0.5, house_budget_mode="rhea", rhea_coef = 0.7, house_budget_perc=0.33, dist_param = [0.3, 0.4, 0.3],
     prop_l=0.5, env_amen_l=0.5, prop_m=0.5, env_amen_m=0.5, prop_h=0.5, env_amen_h=0.5, seed=seed
 )
     util_low = [prop_l, env_amen_l]

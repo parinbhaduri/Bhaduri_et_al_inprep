@@ -37,6 +37,7 @@ for file in model_files
     append!(model_params_df, move_df, cols = :union)
     move_df = nothing
     df = nothing
+    
 end
 
 #params_seeds_df
@@ -91,13 +92,14 @@ phil_obs_high = select(phil_obs, r"^(?!.*VAR).*HIGH")
 
 #read in simulated output data
 simul_outputs = DataFrame(CSV.File(joinpath(@__DIR__,"data/calib_sim_output_$(JOB_NO).csv")))
+#simul_outputs.flood_mem .= 10
 #Take a subset of ensemble members
 ens_size = 250
 simul_outputs = simul_outputs[simul_outputs.seed .<= 999+ens_size,:]
 #Separate by agent categories
 param_cols = ["env_amen_l","price_inc_perc","rhea_coef","base_move",
         "prop_l","prop_m","env_amen_m","risk_averse","build_inc_perc",
-        "env_amen_h","flood_coefficient","penalty","prop_h"
+        "env_amen_h","flood_coefficient","flood_mem", "penalty","prop_h"
 ]
 
 
