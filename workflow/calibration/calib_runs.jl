@@ -34,16 +34,16 @@ end
 @everywhere include("calib_functions.jl")
 
 
-
+seed = collect(range(1000,1249))
 
 calib_params = OrderedDict(
-    :seed=>collect(range(1000,1249)),
+    #:seed=>collect(range(1000,1249)),
     :risk_averse=>[0.3,0.7], #0.5,
-    #:flood_mem[2,15], #10,
+    :flood_mem=>[5,10], #15,
     :build_inc_perc=>[0.01, 0.02], #0.25,
     :price_inc_perc=>[0.01, 0.02], #
     :rhea_coef=>[0.65, 0.75],
-    :base_move=>[0.01,0.03], #0.02,
+    :base_move=>[0.02,0.03], #0.01,
     :prop_l=>[0.25, 0.75],
     :env_amen_l=>[0.25, 0.75],
     :prop_m=>[0.25, 0.75],
@@ -51,8 +51,8 @@ calib_params = OrderedDict(
     :prop_h=>[0.25, 0.75],
     :env_amen_h=>[0.25, 0.75],
     :penalty=>[0.25, 0.75, 5],
-    :flood_coefficient=>[0.25, 0.75],
-    :stay_prob=>[0.75, 1.0]
+    :flood_coefficient=>[0.25, 0.4], #0.75
+    #:stay_prob=>[0.75, 1.0]
 )
 
 chunk_size = 256000  # Adjust based on memory requirements
@@ -92,8 +92,18 @@ log_info("Results will be saved to: $output_dir")
 
 
 # Extract parameter combinations and names
-combs = collect(Iterators.product(values(calib_params)...))
+p_combs = collect(Iterators.product(values(calib_params)...));
 output_params = collect(keys(calib_params))
+#Filter out param combs that have already been run
+run_params = DataFrame(CSV.File(joinpath(@__DIR__, "data/param_comb_initial_135842_ens_250.csv")))
+select!(run_params,string.(output_params))
+
+df_tuples = Set(Tuple(row) for row in eachrow(run_params))
+# Filter out tuples that exist in the DataFrame
+filtered_combs = [t for t in p_combs if t ∉ df_tuples]
+
+combs = [(s, c...) for (s, c) in Iterators.product(seed,filtered_combs)];
+prepend!(output_params,[:seed])
 
 # Determine total combinations and chunk size
 n_combs = length(combs)
