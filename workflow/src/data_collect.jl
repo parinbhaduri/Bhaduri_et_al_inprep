@@ -7,6 +7,7 @@ HH(agent) = agent isa HHAgent && agent.bg_id >= 1
 hh_low(agent) = agent.group == 1 ? 1 : 0
 hh_med(agent) = agent.group == 2 ? 1 : 0
 hh_high(agent) = agent.group == 3 ? 1 : 0
+
 #Pop. Category Pop
 hh_diff_low(agent) = agent.group == 1 && agent.occ_cat != 1 ? 1 : 0 #Low Income Agents not living in Low Income Housing
 hh_diff_med(agent) = agent.group == 2 && agent.occ_cat != 2 ? 1 : 0
@@ -19,6 +20,8 @@ occ_high(agent) = agent.occupied_units[3]
 price_low(agent) = agent.new_price[1]
 price_med(agent) = agent.new_price[2]
 price_high(agent) = agent.new_price[3]
+
+
 
 ##Calculating Transaction Characteristics
 function moved(model, cat)
@@ -80,7 +83,7 @@ pop_exposed_high(model) = pop_exposed(model, 3)
 
 #Simulation Studies data collection
 simul_adata = [(hh_low, sum, HH), (hh_med, sum, HH), (hh_high, sum, HH), (hh_diff_low, sum, HH), (hh_diff_med, sum, HH), (hh_diff_high, sum, HH), 
-    (occ_low, sum, BG), (occ_med, sum, BG), (occ_high, sum, BG), (price_low, mean, BG), (price_med, mean, BG), (price_high, mean, BG)
+    (occ_low, sum, BG), (occ_med, sum, BG), (occ_high, sum, BG), (price_low, mean, BG), (price_med, mean, BG), (price_high, mean, BG), (:flood_hazard,mean,FL_BG)
 ]
 simul_mdata = [moved_low, moved_med, moved_high, moved_diff_low, moved_diff_med, moved_diff_high]
 
@@ -93,3 +96,6 @@ flpn_mdata = [flpn_pop_low, flpn_pop_med, flpn_pop_high, flpn_moved_low, flpn_mo
 #Calibration data collection
 calib_adata = [(hh_low, sum, HH), (hh_med, sum, HH), (hh_high, sum, HH), (price_low, mean, BG), (price_med, mean, BG), (price_high, mean, BG)]
 calib_mdata = [moved_low, moved_med, moved_high, flpn_pop_low, flpn_pop_med, flpn_pop_high]
+
+#Shapley data collection
+shap_adata = [:pos, hh_low, hh_med, hh_high, price_low, price_med, price_high]

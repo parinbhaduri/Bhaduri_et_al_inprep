@@ -8,6 +8,24 @@ function model_error(outputs::Vector, obs::Vector)
     return sum(obj_err.(outputs, obs))
 end
 
+function calc_err(df_group; obs = zeros(4))
+    "Calculates model discrepancy error among
+    ensemble members"
+    #n = nrow(df_group)
+    #data_matrix = Matrix(df_group)
+    #errors = Vector{Float64}(undef, n)
+    #idx = 1
+    #Calculate average simulated output
+    avg_output = mean(Matrix(df_group), dims=1)
+    #Calculate model discrepancy
+    mod_disc = model_error(vec(avg_output), vec(obs))
+    #@inbounds for i in 1:n
+    #    errors[idx] = model_error(Vector(view(data_matrix, i, :)), Vector(obs))
+    #    idx += 1
+    #end
+    return mod_disc
+end
+
 function calc_var(df_group)
     "Calculates variance in errors among
     ensemble members"

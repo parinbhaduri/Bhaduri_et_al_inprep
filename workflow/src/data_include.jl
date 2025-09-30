@@ -21,4 +21,8 @@ phil_flood_record = unstack(phil_flood, :GEOID, :year, :perc_flood_extent)
 phil_flood_record[!,"1982"] = zeros(size(phil_flood_record)[1])
 select!(phil_flood_record, "GEOID", "1981", "1982", Not(["1982", "2019"]), "2019")
 
-#synth_flood_record = DataFrame(CSV.File(joinpath(dirname(pwd()), "CHANCE_C.jl","data","synth_flood_phil.csv")))
+synth_flood_record = DataFrame(CSV.File(joinpath(dirname(pwd()), "CHANCE_C.jl","data","synth_flood_phil.csv")))
+select!(synth_flood_record, "GEOID", "1981","1982", Not(["1980","1982", "2019"]), "2019")
+synth_notin_phil = copy(phil_flood_record[phil_flood_record.GEOID .∉ Ref(synth_flood_record.GEOID),:])
+synth_notin_phil[!,2:end] .= 0
+append!(synth_flood_record, synth_notin_phil)

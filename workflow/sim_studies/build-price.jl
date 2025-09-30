@@ -14,7 +14,7 @@ end
 
 build_params = Dict(
     #:build_perc=>[0.05,0.1,0.25, 0.4],
-    :build_perc=>collect(range(0.0,0.5,step=0.05)),
+    :build_perc=>collect(range(0.0,0.05,step=0.005)),
     :no_of_years=>39,
     :start_year=>1981, 
     :seed=>1500
@@ -24,14 +24,14 @@ build_params = Dict(
 adf_build,mdf_build = paramscan(build_params, phil_build; parallel=true, showprogress=true, adata=simul_adata, mdata=simul_mdata, n=39)
 
 ### For house pricing
-@everywhere function phil_price(;flood_rec = phil_flood_record, build_perc = 0.1, price_perc=price_perc, no_of_years=no_of_years, start_year=start_year, seed=seed)
+@everywhere function phil_price(;flood_rec = phil_flood_record, build_perc = 0.01, price_perc=price_perc, no_of_years=no_of_years, start_year=start_year, seed=seed)
     model = phil_model(;flood_rec = flood_rec, no_of_years=Int(no_of_years), start_year=Int(start_year), build_inc_perc = build_perc, price_inc_perc=price_perc, seed=seed)      
     return model
 end
 
 price_params = Dict(
-    :build_perc=>0.4,
-    :price_perc=>collect(range(0.0,0.5,step=0.05)),
+    :build_perc=>0.01,
+    :price_perc=>collect(range(0.0,0.05,step=0.005)),
     :no_of_years=>39,
     :start_year=>1981, 
     :seed=>1500
@@ -55,7 +55,7 @@ plot(build_market_plots..., layout=(3, 2), size = (1100, 1000), plot_title = "Ma
 
 price_plots = simul_plot(adf_price, :price_perc; color = palette(:BrBG_11))
 plot(price_plots..., layout=(3, 2), size = (1100, 1000), plot_title = "Pop. Dynamics when changing Price %")
-price_market_plots = simul_market(adf_price,mdf_price, :price_perc; color = palette(:BrBG_11))
+price_market_plots = simul_market(adf_price,mdf_price, :price_perc; price_lim =(1e5,2e6), color = palette(:BrBG_11))
 plot(price_market_plots..., layout=(3, 2), size = (1100, 1000), plot_title = "Market Dynamics when changing Price %")
 
 

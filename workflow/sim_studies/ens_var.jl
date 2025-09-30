@@ -11,16 +11,17 @@ include(joinpath(dirname(@__DIR__), "src", "config_parallel.jl"))
 include(joinpath(dirname(@__DIR__), "src", "functions.jl"))
 #Create model functions that only accept a seed value
 @everywhere function phil_gen(;risk_averse=risk_averse, base_move=base_move, build_perc=build_perc,
-     price_perc=price_perc, rhea_coef=rhea_coef, seed=seed
+     dist_param=dist_ind, price_perc=price_perc, rhea_coef=rhea_coef, seed=seed
     )
+    avg_params =[[0.3,0.4,0.3],[3,4,3],[30,40,30]] 
     model = phil_model(;flood_rec = phil_flood_record, risk_averse=risk_averse, base_move=base_move, build_inc_perc=build_perc,
-        price_inc_perc=price_perc, rhea_coef=rhea_coef, no_of_years=Int(39), start_year=Int(1981), seed=seed
+        dist_param=avg_params[dist_param], price_inc_perc=price_perc, rhea_coef=rhea_coef, no_of_years=Int(39), start_year=Int(1981), seed=seed
     )      
     return model
 end
 
-gen_param = Dict(:risk_averse=>0.5, :base_move=>0.01,:build_perc=>0.1, :price_perc=>0.1, :rhea_coef=>0.7, :seed => collect(range(1000,2499)))
-gen_param_2 = Dict(:risk_averse=>0.3, :base_move=>0.005,:build_perc=>0.15, :price_perc=>0.125, :rhea_coef=>0.65, :seed => collect(range(1000,2499)))
+gen_param = Dict(:risk_averse=>0.5, :base_move=>0.01,:build_perc=>0.01, :price_perc=>0.01, :rhea_coef=>0.7, :seed => collect(range(1000,2499)),:dist_param => 1)
+gen_param_2 = Dict(:risk_averse=>0.5, :base_move=>0.01,:build_perc=>0.01, :price_perc=>0.01, :rhea_coef=>0.7, :seed => collect(range(1000,2499)),:dist_param => 2)
 gen_param_3 = Dict(:risk_averse=>0.7, :base_move=>0.015,:build_perc=>0.25, :price_perc=>0.15, :rhea_coef=>0.75, :seed => collect(range(1000,2499)))
 
 #Run and collect data
@@ -53,8 +54,8 @@ using CSV, DataFrames
 using DataFramesMeta
 using Combinatorics
 
-adf = DataFrame(CSV.File(joinpath(@__DIR__,"sim_data/dataframes/adf_ens_var.csv")))
-mdf = DataFrame(CSV.File(joinpath(@__DIR__,"sim_data/dataframes/mdf_ens_var.csv")))
+adf = DataFrame(CSV.File(joinpath(@__DIR__,"sim_data/dataframes/adf_ens_var_2.csv")))
+mdf = DataFrame(CSV.File(joinpath(@__DIR__,"sim_data/dataframes/mdf_ens_var_2.csv")))
 
 ##Calculate total agent population 
 adf.sum_HH = adf.sum_hh_low_HH + adf.sum_hh_med_HH + adf.sum_hh_high_HH

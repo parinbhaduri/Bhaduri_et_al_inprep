@@ -52,7 +52,7 @@ plot(pop_plots..., layout=(3, 2), size = (1100, 1000), plot_title = "Pop. Dynami
 pop_mark_plots = simul_market(adf_pop,mdf_pop, :dist_cat; leg = :outertopright, color = palette(:Set3_3))
 plot(pop_mark_plots..., layout=(3, 2), size = (1100, 1000), plot_title = "Market Dynamics when changing Pop. Growth")
 
-move_plots = simul_plot(adf_move, :base_move; leg = :outertopright, color = palette(:Set3_11))
+move_plots = simul_plot(adf_move, :base_move; leg = :outertopright, color = palette(:BrBG_11))
 plot(move_plots..., layout=(3, 2), size = (1100, 1000), plot_title = "Pop. Dynamics when changing Base Move Prob.")
-move_mark_plots = simul_market(adf_move,mdf_move, :base_move; leg = :outertopright, color = palette(:Set3_11))
+move_mark_plots = simul_market(adf_move,mdf_move, :base_move; leg = :outertopright, color = palette(:BrBG_11))
 plot(move_mark_plots..., layout=(3, 2), size = (1100, 1000), plot_title = "Market Dynamics when changing Base Move Prob.")
