@@ -4,11 +4,13 @@ Pkg.activate(".")
 Pkg.instantiate()
 
 
-using Distributed, SlurmClusterManager
+#using Distributed, SlurmClusterManager
 
 
-addprocs(SlurmManager())
+#addprocs(SlurmManager())
 
+using Distributed
+addprocs(12, exeflags="--project=$(Base.active_project())")
 
 # instantiate and precompile environment
 @everywhere begin
@@ -44,7 +46,7 @@ calib_combs = DataFrame(CSV.File(param_path))[:,1:13]
 
 
 # Set up directories and logging
-output_dir = joinpath(@__DIR__,"data/shap_$(ENV["SLURM_JOB_ID"])")
+output_dir = joinpath(@__DIR__,"data/shap_DESKTOP")#$(ENV["SLURM_JOB_ID"])")
 mkpath(output_dir)
 
 # Set up logging files
@@ -88,7 +90,11 @@ p_combs = collect((Tuple(row) for row in eachrow(calib_combs)))
 output_params = collect(Symbol.(names(calib_combs)))
 append!(output_params,collect(keys(add_params)))
 # Generate all combinations
-combs = [(c..., p, s) for (c, p, s) in Iterators.product(p_combs,values(add_params)...)]
+combs = [(c..., p, s) for (c, p, s) in Iterators.product(p_combs,values(add_params)...)];
+param_matrix = stack([collect(tuple) for tuple in vec(combs)])'
+shap_param_df = DataFrame(param_matrix, output_params)
+
+CSV.write(joinpath(output_dir,"param_runs_shap.csv"), shap_param_df)
 
 # Determine total combinations and chunk size
 chunk_size = 30250  # Adjust based on memory requirements
@@ -98,7 +104,7 @@ n_chunks = ceil(Int, n_combs / chunk_size)
 log_info("Processing $n_combs parameter combinations in $n_chunks chunks")
 
 # Set up data file 
-filename = joinpath(output_dir,"abm_data_$(ENV["SLURM_JOB_ID"]).h5") 
+filename = joinpath(output_dir,"abm_data_DESKTOP.h5") #$(ENV["SLURM_JOB_ID"])
 n_years = 40
 var_names = string.(shap_adata[2:end])
 n_vars = length(var_names)
@@ -106,12 +112,16 @@ n_agents = 755
 
 h5open(filename, "w") do file
     # Create datasets with chunking for efficient I/O
-    chunk_size = (min(100, n_combs), n_agents, min(10, n_years), n_vars)
+    chunk_size = (1, n_agents, n_years, 1)
         
     # Main data array: (runs, agents, years, variables)
-    create_dataset(file, "data", Float64, (n_combs, n_agents, n_years, n_vars),
-                      chunk=chunk_size, compress=3)
-        
+    create_dataset(file, "pop_data", Float32, (n_combs, n_agents, n_years, 3),
+                      chunk=chunk_size, deflate=9, shuffle=true
+    )
+
+    create_dataset(file, "price_data", Float32, (n_combs, n_agents, n_years, 3),
+                      chunk=chunk_size, deflate=9, shuffle=true
+    )  
     # Metadata
     write(file, "variable_names", var_names)
     write(file, "n_runs", n_combs)
