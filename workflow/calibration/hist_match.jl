@@ -10,10 +10,13 @@ using ProgressMeter
 include(joinpath(dirname(@__DIR__), "src", "functions.jl"))
 
 ##Set constants
-threshold = 5.0
+threshold = 10.0 #min 5 max 50
 max_iterations = 10
 
-params_df = DataFrame(CSV.File(joinpath(@__DIR__, "data/param_comb_initial_135842_ens_250.csv")))
+params_df_1 = DataFrame(CSV.File(joinpath(@__DIR__, "data/param_comb_initial_135842_ens_250.csv")))
+params_df_2 = DataFrame(CSV.File(joinpath(@__DIR__, "data/param_comb_initial_140369_ens_250.csv")))
+
+params_df = vcat(params_df_1,params_df_2)
 
 phil_obs = DataFrame(CSV.File(joinpath(dirname(pwd()), "philadelphia-data","model_inputs", "calibration", "phil_obs_df.csv")))
 obs_var = Matrix(select!(phil_obs, r"_VAR"))
@@ -48,7 +51,7 @@ while iteration ≤ max_iterations
     #Calculate stats for this wave
     n_before = nrow(hm_df)
     n_after = nrow(new_df)
-    reduction_factor = n_after / n_before
+    reduction_factor = (n_before - n_after) / n_before
     max_implausibility = maximum(imp_scores)
     min_implausibility = minimum(imp_scores)
 
@@ -96,7 +99,7 @@ final_stats = (
     total_waves = min(iteration, max_iterations),
     initial_combinations = initial_combs,
     final_combinations = nrow(hm_df),
-    overall_reduction_factor = nrow(hm_df) / initial_combs,
+    overall_reduction_factor = (initial_combs - nrow(hm_df)) / initial_combs,
     final_acceptance_rate = nrow(hm_df) / initial_combs * 100
 )
     
@@ -110,4 +113,4 @@ println()
 
 
 #Save calibrated df
-CSV.write(joinpath(@__DIR__, "data/param_comb_final_135842_mean_thresh_5_ens_250.csv"), hm_df)
+CSV.write(joinpath(@__DIR__, "data/param_comb_final_mean_thresh_6_ens_250.csv"), hm_df)

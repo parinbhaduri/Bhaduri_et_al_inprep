@@ -10,12 +10,12 @@ using Statistics
 
 #Load data
 #t_d = DataFrame(CSV.File(joinpath(@__DIR__,"data/results_118418/agents_chunk_2.csv")))
-JOB_NO = 135842
+JOB_NO = 140369 #135842
 dat_dir =joinpath(@__DIR__,"data/results_$(JOB_NO)/")
 
-param_cols = ["env_amen_l","price_inc_perc","rhea_coef","base_move",
-"prop_l","prop_m","env_amen_m","risk_averse","build_inc_perc",
-"env_amen_h","flood_coefficient","penalty","prop_h", "seed"]
+param_cols = ["price_inc_perc","rhea_coef","base_move",
+"prop_l","prop_m","prop_h","env_amen_l","env_amen_m","env_amen_h", 
+"risk_averse","build_inc_perc", "flood_mem","flood_coefficient","penalty", "seed"]
 
 
 agent_files = filter(file -> occursin(r"^agents.*\.csv$",file), readdir(dat_dir))
@@ -94,8 +94,8 @@ phil_obs_high = select(phil_obs, r"^(?!.*VAR).*HIGH")
 simul_outputs = DataFrame(CSV.File(joinpath(@__DIR__,"data/calib_sim_output_$(JOB_NO).csv")))
 #simul_outputs.flood_mem .= 10
 #Take a subset of ensemble members
-ens_size = 250
-simul_outputs = simul_outputs[simul_outputs.seed .<= 999+ens_size,:]
+#ens_size = 250
+#simul_outputs = simul_outputs[simul_outputs.seed .<= 999+ens_size,:]
 #Separate by agent categories
 param_cols = ["env_amen_l","price_inc_perc","rhea_coef","base_move",
         "prop_l","prop_m","env_amen_m","risk_averse","build_inc_perc",

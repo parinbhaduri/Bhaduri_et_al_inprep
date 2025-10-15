@@ -20,7 +20,10 @@ occ_high(agent) = agent.occupied_units[3]
 price_low(agent) = agent.new_price[1]
 price_med(agent) = agent.new_price[2]
 price_high(agent) = agent.new_price[3]
-
+#Housing Capacities
+cap_low(agent) = agent.occupied_units[1] + agent.available_units[1]
+cap_med(agent) = agent.occupied_units[2] + agent.available_units[2]
+cap_high(agent) = agent.occupied_units[3] + agent.available_units[3]
 
 
 ##Calculating Transaction Characteristics
@@ -98,4 +101,4 @@ calib_adata = [(hh_low, sum, HH), (hh_med, sum, HH), (hh_high, sum, HH), (price_
 calib_mdata = [moved_low, moved_med, moved_high, flpn_pop_low, flpn_pop_med, flpn_pop_high]
 
 #Shapley data collection
-shap_adata = [:pos, hh_low, hh_med, hh_high, price_low, price_med, price_high]
+shap_adata = [:pos, :GEOID, hh_low, hh_med, hh_high, price_low, price_med, price_high, cap_low, cap_med, cap_high]

@@ -7,9 +7,12 @@ flood_file = "phil_flood_hist_year.csv"
 
 ##Read in Demographic Data
 phil_bg = DataFrame(CSV.File(joinpath(dirname(pwd()), data_location, bg_file)))
-pop_files = filter(file -> occursin(r"^philly_cbsa_pop.*\.csv$",file), readdir(joinpath(dirname(pwd()), data_location, "pop_files")))
+pop_dir = joinpath(dirname(pwd()), data_location, "pop_files")
+#pop_files = filter(file -> occursin(r"^philly_cbsa_pop.*\.csv$",file), readdir(joinpath(dirname(pwd()), data_location, "pop_files")))
 
-phil_cbsa_pop = DataFrame[]
+#phil_cbsa_pop = DataFrame[]
+
+#=
 for file in pop_files
     df = DataFrame(CSV.File(joinpath(dirname(pwd()), data_location, "pop_files",file)))
     #drop missing values
@@ -24,7 +27,7 @@ for file in pop_files
 end
 
 phil_cbsa_pop = vcat(phil_cbsa_pop...)
-
+=#
 ##Read in flood data
 phil_flood = DataFrame(CSV.File(joinpath(dirname(pwd()), data_location, flood_file)))
 #transform df to correct format
@@ -32,16 +35,49 @@ phil_flood_record = unstack(phil_flood, :GEOID, :year, :perc_flood_extent)
 #Extra edits
 phil_flood_record[!,"1982"] = zeros(size(phil_flood_record)[1])
 select!(phil_flood_record, "GEOID", "1981", "1982", Not(["1982", "2019"]), "2019")
-
+#Create synthetic flood record of no floods 
+synth_mat = zeros(size(phil_flood_record[:,2:end]))
+synth_flood_record = DataFrame(hcat(phil_flood_record.GEOID,synth_mat), names(phil_flood_record))
+synth_flood_record[!,:GEOID] = convert.(Int64, synth_flood_record[!,:GEOID])
 
 ###Functions
-function PhilPopABM(;bg_df = phil_bg, phil_df = phil_cbsa_pop, f_df = phil_flood_record,
+function init_flood(;ref_year=1981, repeat=false, freq=5, f_df=synth_flood_record, ref_df=phil_flood_record)
+    df = copy(f_df)
+    #Grab reference flood year
+    flood_event = ref_df[:,string(ref_year)]
+    if repeat
+        flood_year = string.(collect(1980+freq:freq:2019))
+    else
+        flood_year = "1985"
+    end
+    
+    df[!,flood_year] .= flood_event
+
+    return df
+    
+end
+
+function load_pop(pop_value)
+    df = DataFrame(CSV.File(joinpath(pop_dir, "philly_cbsa_pop_$pop_value.csv")))
+    #drop missing values
+    dropmissing!(df, :NP)
+    #For rows with people and negative income, set income to bottom 10%
+    inc_bot_10 = quantile(subset(df, [:NP .=> ByRow(>(0)), :adj_income_2019 .=> ByRow(>(0))]).adj_income_2019, [0.10])[1]
+    @. df.adj_income_2019 = ifelse.(df.NP > 0 && df.adj_income_2019 <= 0, inc_bot_10, df.adj_income_2019)
+
+    return df
+end
+
+function PhilPopABM(;bg_df = phil_bg, flood_event_year=1981, flood_repeat=false, flood_freq=5,
     perc_growth=0.01, flood_coefficient=0.5, risk_averse=0.5, flood_mem=10, base_move=0.01, build_inc_perc=0.01, price_inc_perc=0.01,
-    pop_no=0, penalty=0.5, house_budget_mode="rhea", rhea_coef = 0.7, house_budget_perc=0.33, dist_param = [0.5, 0.25, 0.25],
-    prop_l=0.5, env_amen_l=0.5, prop_m=0.5, env_amen_m=0.5, prop_h=0.5, env_amen_h=0.5, seed=seed
+    penalty=0.5, house_budget_mode="rhea", rhea_coef = 0.7, house_budget_perc=0.33, dist_param = [0.3, 0.4, 0.3], pop_no = 0,
+    prop_l=0.5, env_amen_l=0.5, prop_m=0.5, env_amen_m=0.5, prop_h=0.5, env_amen_h=0.5, seed=1200
 )
+    #Initialize flood record
+    f_df = init_flood(;ref_year=flood_event_year, repeat=flood_repeat, freq=flood_freq)
+    
     #Initialize Pop Distribution
-    pop_df = phil_df[phil_df.pop_ens .== pop_no, :]
+    pop_df = load_pop(pop_no) #phil_df[phil_df.pop_ens .== pop_no, :]
 
     util_low = [prop_l, env_amen_l]
     util_med = [prop_m, env_amen_m]
@@ -62,6 +98,40 @@ function PhilPopABM(;bg_df = phil_bg, phil_df = phil_cbsa_pop, f_df = phil_flood
     return model
 end
 
+function shock_pop_shares(model::ABM)
+    #Collect counts of HHAgents' group and occ_cat counts
+    ag_data = DataFrame(
+        bg_id = [model[id].bg_id for id in allids(model) if model[id] isa HHAgent],
+        group = [model[id].group for id in allids(model) if model[id] isa HHAgent],
+        occ_cat = [model[id].occ_cat for id in allids(model) if model[id] isa HHAgent]
+    )
+    filter!(:bg_id => x -> x > 0, ag_data) #exclude Queues
+    cat_counts = combine(
+            groupby(ag_data, [:bg_id, :group, :occ_cat]),
+            nrow => :count
+    )
+
+    # Create complete grid of all group-occ_cat combinations to ensure consistent size
+    categories = [1,2,3]
+    block_groups_list = [id for id in allids(model) if model[id] isa BlockGroup]
+
+    complete_grid = crossjoin(
+        DataFrame(bg_id = block_groups_list),
+        DataFrame(group = categories),
+        DataFrame(occ_cat = categories)
+    )
+
+    # Left join to fill in missing combinations with 0
+    result = leftjoin(complete_grid, cat_counts, on=[:bg_id, :group, :occ_cat])
+    result.count = coalesce.(result.count, 0)
+    #Record BG GEOIDs
+    result.GEOID = [model[id].GEOID for id in result.bg_id]
+    #Format
+    select!(result, :bg_id,:GEOID, Not([:bg_id, :GEOID]))
+
+    return result
+
+end
 
 #Function to run model instance and collect data)
 function run_single(
@@ -70,11 +140,25 @@ function run_single(
     initialize;
     n = 1,
     adata=shap_adata,
+    shock=false, #Whether we're simulating one large flood shock (true) or multiple small (false)
     kwargs...,
 )
     output_params_dict = Dict(output_params .=> params)
     model = initialize(;output_params_dict...)
-    df_agent_single,_ = run!(model, n; adata=adata,kwargs...)
+    #Run
+    pop_shares_df = DataFrame() 
+    if shock
+        df_agent_single_1,_ = run!(model, 5; adata=adata,kwargs...)
+        #Collect shares of agents in every block group
+        pop_shares_df = shock_pop_shares(model)
+        #Continue running till end of time horizon
+        df_agent_single_2,_ = run!(model, n-5; adata=adata, init=false, kwargs...)
+
+        df_agent_single = vcat(df_agent_single_1, df_agent_single_2)
+    else 
+        df_agent_single,_ = run!(model, n; adata=adata,kwargs...)
+    end
+    
    
     #Drop rows in queue
     queue_pos = df_agent_single[df_agent_single.agent_type .== Symbol("CHANCE_C.Queue"),:].pos[1:2]
@@ -82,34 +166,51 @@ function run_single(
     #Remove missing values
     data_df =combine(groupby(df_agent_single,[:time, :pos]),
         :id => minimum => :bg_id,
-        Symbol.(adata[2:end]) .=> (col -> sum(skipmissing(col))) .=> (string.(adata[2:end]) .* "_sum")
+        :GEOID .=> (col -> minimum(skipmissing(col))) .=> :GEOID,
+        Symbol.(adata[3:end]) .=> (col -> sum(skipmissing(col))) .=> (string.(adata[3:end]) .* "_sum")
     )
-    return data_df
+    return (data_df, pop_shares_df)
 end
 
 #Write data to hdf5 file  
-function save_model_data!(filename, run_idx, df, n_agents=755, n_years=40, n_vars=6)
+function save_model_data!(filename, run_idx, df, n_agents=755, n_years=40)
     h5open(filename, "r+") do file
         # Convert DataFrame to 3D array (agents × years × variables)
         # Assuming df has columns: agent_id, year, var1, var2, var3, var4, var5, var6
         
-        # Get variable columns (excluding agent_id and year)
-        var_cols = names(df)[4:end]  # Adjust based on your structure
+        # Get variable columns (excluding agent_id,year,GEOID)
+        pop_cols = names(df)[5:7]  # Adjust based on your structure
+        house_cols = names(df)[8:end]
         
         # Convert to 3D array
-        data_array = zeros(n_agents, n_years, n_vars)  # agents × years × variables
-        
+        pop_array = zeros(n_agents, n_years, length(pop_cols))  # agents × years ×  pop variables
+        price_array = zeros(n_agents, n_years, length(house_cols))
+
         for row in eachrow(df)
             agent_idx = row.bg_id
             year_idx = row.time + 1 #Time starts at 0
-            for (var_idx, var_name) in enumerate(var_cols)
-                data_array[agent_idx, year_idx, var_idx] = row[var_name]
+            for (var_idx, var_name) in enumerate(pop_cols)
+                #Subset by data type and add to relevant array
+                pop_array[agent_idx, year_idx, var_idx] = row[var_name]
+            end
+            for (var_idx, var_name) in enumerate(house_cols)
+                price_array[agent_idx, year_idx, var_idx] = row[var_name]
             end
         end
         
         # Write to HDF5 (run_idx is the current model run number)
-        file["data"][run_idx, :, :, :] = data_array
+        file["pop_data"][run_idx, :, :, :] = pop_array
+        file["price_data"][run_idx, :, :, :] = price_array
         
+    end
+end
+
+function save_pop_share_data!(filename, run_idx, df)
+    h5open(filename, "r+") do file
+        # Convert DataFrame to 2D array 
+
+        # Write to HDF5 (run_idx is the current model run number)
+        file["pop_share_data"][run_idx, :, :] = Matrix(df[!,2:end])
     end
 end
 #=
