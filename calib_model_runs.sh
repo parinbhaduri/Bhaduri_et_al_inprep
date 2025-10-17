@@ -1,5 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=calib_runs_phil
+#SBATCH --mail-user=pbb62@cornell.edu
+#SBATCH --mail-type=ALL
 #SBATCH --nodes=6
 #SBATCH --ntasks-per-node=65
 #SBATCH --output=workflow/calibration/output_text.txt

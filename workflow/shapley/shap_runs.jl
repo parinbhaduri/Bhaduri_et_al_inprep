@@ -4,13 +4,13 @@ Pkg.activate(".")
 Pkg.instantiate()
 
 
-#using Distributed, SlurmClusterManager
+using Distributed, SlurmClusterManager
 
 
-#addprocs(SlurmManager())
+addprocs(SlurmManager())
 
-using Distributed
-addprocs(12, exeflags="--project=$(Base.active_project())")
+#using Distributed
+#addprocs(12, exeflags="--project=$(Base.active_project())")
 
 # instantiate and precompile environment
 @everywhere begin
@@ -65,12 +65,12 @@ events = combine(groupby(haz_cat, "category")) do group
     )
 end
 
-flood_years = [1990,2011]#vcat(events.year_min,events.year_med, events.year_max)
+flood_years = [2011] #vcat(events.year_min,events.year_med, events.year_max)
 one_shock = true
 repeat_shocks = false
 
 # Set up directories and logging
-output_dir = joinpath(@__DIR__,"data/shap_DESKTOP")#$(ENV["SLURM_JOB_ID"])")
+output_dir = joinpath(@__DIR__,"shap_$(ENV["SLURM_JOB_ID"])")
 mkpath(output_dir)
 
 # Set up logging files
@@ -124,7 +124,7 @@ CSV.write(joinpath(output_dir,"param_runs_shap.csv"), shap_param_df)
 append!(output_params, [:flood_event_year, :flood_repeat])
 
 # Determine total combinations and chunk size
-chunk_size = 31900  # Adjust based on memory requirements
+chunk_size = 39875  # Adjust based on memory requirements
 
 
 
@@ -143,7 +143,7 @@ for flood_shock in flood_years
     end
 
     # Set up data file 
-    filename = joinpath(output_dir,"$(flood_shock)_abm_data_shap_DESKTOP.h5") #$(ENV["SLURM_JOB_ID"])
+    filename = joinpath(output_dir,"$(flood_shock)_abm_data_shap_$(ENV["SLURM_JOB_ID"].h5")
     n_years = 40
     n_agents = 755
 
@@ -170,7 +170,7 @@ for flood_shock in flood_years
     end
 
     # Set up pop shares during shock data file 
-    pop_share_file = joinpath(output_dir,"$(flood_shock)_pop_share_data_shap_DESKTOP.h5") #$(ENV["SLURM_JOB_ID"])
+    pop_share_file = joinpath(output_dir,"$(flood_shock)_pop_share_data_shap_$(ENV["SLURM_JOB_ID"].h5")
 
     h5open(pop_share_file, "w") do file
         # Create datasets with chunking for efficient I/O

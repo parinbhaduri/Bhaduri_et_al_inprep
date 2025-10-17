@@ -1,7 +1,9 @@
 #!/bin/bash
 #SBATCH --job-name=shap_runs_phil
+#SBATCH --mail-user=pbb62@cornell.edu
+#SBATCH --mail-type=ALL
 #SBATCH --nodes=6
-#SBATCH --ntasks-per-node=65
+#SBATCH --ntasks-per-node=75
 #SBATCH --output=workflow/shapley/output_text.txt
 #SBATCH --error=workflow/shapley/error_text.txt
 #SBATCH --exclusive
