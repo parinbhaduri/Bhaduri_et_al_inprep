@@ -143,7 +143,7 @@ for flood_shock in flood_years
     end
 
     # Set up data file 
-    filename = joinpath(output_dir,"$(flood_shock)_abm_data_shap_$(ENV["SLURM_JOB_ID"].h5")
+    filename = joinpath(output_dir,"$(flood_shock)_abm_data_$(ENV["SLURM_JOB_ID"]).h5")
     n_years = 40
     n_agents = 755
 
@@ -170,7 +170,7 @@ for flood_shock in flood_years
     end
 
     # Set up pop shares during shock data file 
-    pop_share_file = joinpath(output_dir,"$(flood_shock)_pop_share_data_shap_$(ENV["SLURM_JOB_ID"].h5")
+    pop_share_file = joinpath(output_dir,"$(flood_shock)_pop_share_data_$(ENV["SLURM_JOB_ID"]).h5")
 
     h5open(pop_share_file, "w") do file
         # Create datasets with chunking for efficient I/O
