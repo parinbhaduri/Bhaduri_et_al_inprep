@@ -148,11 +148,11 @@ function run_single(
     #Run
     pop_shares_df = DataFrame() 
     if shock
-        df_agent_single_1,_ = run!(model, 5; adata=adata,kwargs...)
+        df_agent_single_1,_ = run!(model, 4; adata=adata,kwargs...) #Run till year before flood shock
         #Collect shares of agents in every block group
         pop_shares_df = shock_pop_shares(model)
         #Continue running till end of time horizon
-        df_agent_single_2,_ = run!(model, n-5; adata=adata, init=false, kwargs...)
+        df_agent_single_2,_ = run!(model, n-4; adata=adata, init=false, kwargs...)
 
         df_agent_single = vcat(df_agent_single_1, df_agent_single_2)
     else 

@@ -197,7 +197,7 @@ for flood_shock in flood_years
 
     log_info("Processing $n_combs parameter combinations in $n_chunks chunks")
 
-    for chunk_idx in 1:n_chunks
+    for chunk_idx in 2:n_chunks
         # Get subset of combinations for this chunk
         start_idx = (chunk_idx - 1) * chunk_size + 1
         end_idx = min(chunk_idx * chunk_size, n_combs)
@@ -215,9 +215,9 @@ for flood_shock in flood_years
             
             while true
                 result = take!(result_channel)
-                if isnothing(result)  # Sentinel value to stop
-                    break
-                end
+                #if isnothing(result)  # Sentinel value to stop
+                #    break
+                #end
                 
                 try
                     idx, sim_df, pop_df = result
@@ -256,15 +256,13 @@ for flood_shock in flood_years
                         put!(result_channel, (start_idx + i - 1, DataFrame(), DataFrame()))
                     end
                 end
-                put!(result_channel, nothing)  # Signal completion
+                close(result_channel)  # Signal completion by closing
             end
         end
 
         valid_count, invalid_count = fetch(save_task)
         log_info("Chunk $chunk_idx processed: $valid_count valid results, $invalid_count invalid results")
         
-        # Close the channel to free resources
-        close(result_channel)
         # Force garbage collection after processing chunk
         GC.gc()
 
