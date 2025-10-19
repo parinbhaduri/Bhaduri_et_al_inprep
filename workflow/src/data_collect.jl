@@ -4,9 +4,13 @@ BG(agent) = agent isa BlockGroup
 FL_BG(agent) = agent isa BlockGroup && agent.perc_fld_area > 0
 HH(agent) = agent isa HHAgent && agent.bg_id >= 1
 #Pop. Category Pop
-hh_low(agent) = agent.group == 1 ? 1 : 0
-hh_med(agent) = agent.group == 2 ? 1 : 0
-hh_high(agent) = agent.group == 3 ? 1 : 0
+ag_low(agent) = agent.group == 1 ? 1 : 0
+ag_med(agent) = agent.group == 2 ? 1 : 0
+ag_high(agent) = agent.group == 3 ? 1 : 0
+
+hh_low(agent) = agent.group == 1 ? agent.no_hhs_per_agent*agent.hh_size : 0
+hh_med(agent) = agent.group == 2 ? agent.no_hhs_per_agent*agent.hh_size : 0
+hh_high(agent) = agent.group == 3 ? agent.no_hhs_per_agent*agent.hh_size : 0
 
 #Pop. Category Pop
 hh_diff_low(agent) = agent.group == 1 && agent.occ_cat != 1 ? 1 : 0 #Low Income Agents not living in Low Income Housing
@@ -101,4 +105,5 @@ calib_adata = [(hh_low, sum, HH), (hh_med, sum, HH), (hh_high, sum, HH), (price_
 calib_mdata = [moved_low, moved_med, moved_high, flpn_pop_low, flpn_pop_med, flpn_pop_high]
 
 #Shapley data collection
-shap_adata = [:pos, :GEOID, hh_low, hh_med, hh_high, price_low, price_med, price_high, cap_low, cap_med, cap_high]
+shap_adata = [:pos, :GEOID, ag_low, ag_med, ag_high, hh_low, hh_med, hh_high, 
+                price_low, price_med, price_high, cap_low, cap_med, cap_high]

@@ -71,7 +71,7 @@ end
 function PhilPopABM(;bg_df = phil_bg, flood_event_year=1981, flood_repeat=false, flood_freq=5,
     perc_growth=0.01, flood_coefficient=0.5, risk_averse=0.5, flood_mem=10, base_move=0.01, build_inc_perc=0.01, price_inc_perc=0.01,
     penalty=0.5, house_budget_mode="rhea", rhea_coef = 0.7, house_budget_perc=0.33, dist_param = [0.3, 0.4, 0.3], pop_no = 0,
-    prop_l=0.5, env_amen_l=0.5, prop_m=0.5, env_amen_m=0.5, prop_h=0.5, env_amen_h=0.5, seed=1200
+    prop_l=0.5, env_amen_l=0.5, prop_m=0.5, env_amen_m=0.5, prop_h=0.5, env_amen_h=0.5, seed=1200,
 )
     #Initialize flood record
     f_df = init_flood(;ref_year=flood_event_year, repeat=flood_repeat, freq=flood_freq)
@@ -100,15 +100,32 @@ end
 
 function shock_pop_shares(model::ABM)
     #Collect counts of HHAgents' group and occ_cat counts
-    ag_data = DataFrame(
-        bg_id = [model[id].bg_id for id in allids(model) if model[id] isa HHAgent],
-        group = [model[id].group for id in allids(model) if model[id] isa HHAgent],
-        occ_cat = [model[id].occ_cat for id in allids(model) if model[id] isa HHAgent]
-    )
+    hh_ids = [id for id in allids(model) if model[id] isa HHAgent]
+    n = length(hh_ids)
+
+    bg_id = Vector{Int}(undef, n)  
+    group = Vector{Int}(undef, n)
+    occ_cat = Vector{Int}(undef, n)
+    income = Vector{Float64}(undef, n)
+    hh_pop = Vector{Float64}(undef, n)
+
+    for (i, id) in enumerate(hh_ids)
+        agent = model[id]
+        bg_id[i] = agent.bg_id
+        group[i] = agent.group
+        occ_cat[i] = agent.occ_cat
+        income[i] = agent.income
+        hh_pop[i] = agent.no_hhs_per_agent * agent.hh_size
+    end
+
+    ag_data = DataFrame(; bg_id, group, occ_cat, income, hh_pop)
+
     filter!(:bg_id => x -> x > 0, ag_data) #exclude Queues
     cat_counts = combine(
             groupby(ag_data, [:bg_id, :group, :occ_cat]),
-            nrow => :count
+            nrow => :count,
+            :income => sum => :TotalIncome,
+            :hh_pop => sum => :TotalPop,
     )
 
     # Create complete grid of all group-occ_cat combinations to ensure consistent size
@@ -124,6 +141,8 @@ function shock_pop_shares(model::ABM)
     # Left join to fill in missing combinations with 0
     result = leftjoin(complete_grid, cat_counts, on=[:bg_id, :group, :occ_cat])
     result.count = coalesce.(result.count, 0)
+    result.TotalIncome = coalesce.(result.TotalIncome, 0.0)
+    result.TotalPop = coalesce.(result.TotalPop, 0.0)
     #Record BG GEOIDs
     result.GEOID = [model[id].GEOID for id in result.bg_id]
     #Format
@@ -159,16 +178,17 @@ function run_single(
         df_agent_single,_ = run!(model, n; adata=adata,kwargs...)
     end
     
-   
+    
     #Drop rows in queue
     queue_pos = df_agent_single[df_agent_single.agent_type .== Symbol("CHANCE_C.Queue"),:].pos[1:2]
     subset!(df_agent_single, :pos => x -> .!(x .∈ Ref(queue_pos)))
     #Remove missing values
-    data_df =combine(groupby(df_agent_single,[:time, :pos]),
+    data_df = combine(groupby(df_agent_single,[:time, :pos]),
         :id => minimum => :bg_id,
         :GEOID .=> (col -> minimum(skipmissing(col))) .=> :GEOID,
         Symbol.(adata[3:end]) .=> (col -> sum(skipmissing(col))) .=> (string.(adata[3:end]) .* "_sum")
     )
+   
     return (data_df, pop_shares_df)
 end
 
@@ -179,8 +199,8 @@ function save_model_data!(filename, run_idx, df, n_agents=755, n_years=40)
         # Assuming df has columns: agent_id, year, var1, var2, var3, var4, var5, var6
         
         # Get variable columns (excluding agent_id,year,GEOID)
-        pop_cols = names(df)[5:7]  # Adjust based on your structure
-        house_cols = names(df)[8:end]
+        pop_cols = names(df)[5:10]  # Adjust based on your structure
+        house_cols = names(df)[11:end]
         
         # Convert to 3D array
         pop_array = zeros(n_agents, n_years, length(pop_cols))  # agents × years ×  pop variables
@@ -213,6 +233,8 @@ function save_pop_share_data!(filename, run_idx, df)
         file["pop_share_data"][run_idx, :, :] = Matrix(df[!,2:end])
     end
 end
+
+
 #=
 comb = combs[5]
 adf = run_single(comb, output_params, PhilPopABM; adata=shap_adata, n=39)

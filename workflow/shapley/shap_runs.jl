@@ -36,9 +36,6 @@ end
 @everywhere include(joinpath(dirname(@__DIR__),"src/data_collect.jl"))
 @everywhere include("shap_functions.jl")
 
-
-
-
 #Load calibrated parameter combinations
 param_path = joinpath(dirname(@__DIR__),"calibration","data/param_comb_final_mean_thresh_6_ens_250.csv")
 calib_combs = DataFrame(CSV.File(param_path))[:,1:14]
@@ -70,8 +67,11 @@ one_shock = true
 repeat_shocks = false
 
 # Set up directories and logging
-output_dir = joinpath(@__DIR__,"shap_$(ENV["SLURM_JOB_ID"])")
+output_dir = joinpath(@__DIR__,"data","shap_$(ENV["SLURM_JOB_ID"])")
 mkpath(output_dir)
+
+data_dir = joinpath(@__DIR__,"data","shap_runs)")
+mkpath(data_dir)
 
 # Set up logging files
 run_log = joinpath(output_dir, "run_log.txt")
@@ -143,16 +143,16 @@ for flood_shock in flood_years
     end
 
     # Set up data file 
-    filename = joinpath(output_dir,"$(flood_shock)_abm_data_$(ENV["SLURM_JOB_ID"]).h5")
+    filename = joinpath(data_dir,"$(flood_shock)_abm_data_$(ENV["SLURM_JOB_ID"]).h5")
     n_years = 40
     n_agents = 755
-
+    
     h5open(filename, "w") do file
         # Create datasets with chunking for efficient I/O
         chunk_size = (1, n_agents, n_years, 1)
             
         # Main data array: (runs, agents, years, variables)
-        create_dataset(file, "pop_data", Float32, (n_combs, n_agents, n_years, 3),
+        create_dataset(file, "pop_data", Float32, (n_combs, n_agents, n_years, 6),
                         chunk=chunk_size, deflate=9, shuffle=true
         )
 
@@ -160,30 +160,30 @@ for flood_shock in flood_years
                         chunk=chunk_size, deflate=9, shuffle=true
         )  
         # Metadata
-        write(file, "pop_vars", string.(shap_adata[3:5]))
+        write(file, "pop_vars", string.(shap_adata[3:8]))
         write(file, "historical flood year", flood_shock)
         write(file, "n_runs", n_combs)
         write(file, "n_agents", n_agents)
         write(file, "GEOID", unique(phil_bg.GEOID)) 
         write(file, "n_years", n_years)
-        write(file, "price_vars", string.(shap_adata[6:end]))    
+        write(file, "price_vars", string.(shap_adata[9:end]))    
     end
-
+    
     # Set up pop shares during shock data file 
-    pop_share_file = joinpath(output_dir,"$(flood_shock)_pop_share_data_$(ENV["SLURM_JOB_ID"]).h5")
+    pop_share_file = joinpath(data_dir,"$(flood_shock)_pop_share_data_$(ENV["SLURM_JOB_ID"]).h5")
 
     h5open(pop_share_file, "w") do file
         # Create datasets with chunking for efficient I/O
-        chunk_size = (1,9,4)
+        chunk_size = (1,9,6) 
             
         # Main data array: (runs, agents, years, variables)
-        create_dataset(file, "pop_share_data", Float32, (n_combs, n_agents*9, 4),
+        create_dataset(file, "pop_share_data", Float32, (n_combs, n_agents*9, 6), 
                         chunk=chunk_size, deflate=9, shuffle=true
         )
     
         # Metadata
         write(file, "categories", ["low", "middle","high"])
-        write(file, "column_names", ["GEOID", "agent group","housing cat", "count"])
+        write(file, "column_names", ["GEOID", "agent group","housing cat", "count", "income", "household pop."])
         write(file, "n_runs", n_combs)
         write(file, "n_agents", n_agents)
         write(file, "GEOID", unique(phil_bg.GEOID)) 
@@ -197,7 +197,8 @@ for flood_shock in flood_years
 
     log_info("Processing $n_combs parameter combinations in $n_chunks chunks")
 
-    for chunk_idx in 2:n_chunks
+    for chunk_idx in 1:n_chunks
+        
         # Get subset of combinations for this chunk
         start_idx = (chunk_idx - 1) * chunk_size + 1
         end_idx = min(chunk_idx * chunk_size, n_combs)
@@ -206,27 +207,32 @@ for flood_shock in flood_years
         log_info("Starting chunk $chunk_idx of $n_chunks (combinations $start_idx to $end_idx)")
 
         # Create a channel to stream results
-        result_channel = RemoteChannel(() -> Channel{Tuple{Int, DataFrame, DataFrame}}(nworkers() * 2))
+        result_channel = RemoteChannel(() -> Channel{Tuple{Int, DataFrame, DataFrame}}(nworkers() * 2)) # 
 
         # Async task to save results as they arrive
         save_task = @async begin
             valid_count = 0
             invalid_count = 0
-            
-            while true
-                result = take!(result_channel)
-                #if isnothing(result)  # Sentinel value to stop
-                #    break
-                #end
-                
+            processed_count = 0
+    
+            while processed_count < length(chunk_combs)
                 try
-                    idx, sim_df, pop_df = result
-                    save_model_data!(filename, idx, sim_df, n_agents, n_years)
-                    save_pop_share_data!(pop_share_file, idx, pop_df)
-                    valid_count += 1
+                    idx, sim_df, pop_df = take!(result_channel)
+                    #idx, sim_df, pop_df = results
+                    try  
+                        save_model_data!(filename, idx, sim_df, n_agents, n_years)
+                        save_pop_share_data!(pop_share_file, idx, pop_df)
+                        valid_count += 1
+                    catch e
+                        log_error("Error saving result $idx: $(sprint(showerror, e))")
+                        invalid_count += 1
+                    end
+
+                    processed_count += 1
+
                 catch e
-                    log_error("Error saving result $idx: $(sprint(showerror, e))")
-                    invalid_count += 1
+                    log_error("Error taking from channel: $(sprint(showerror, e))")
+                    break
                 end
             end
             
@@ -234,35 +240,33 @@ for flood_shock in flood_years
         end
 
         # Run simulations and stream results
-        @sync begin
-            @async begin
-                # Set up progress meter
-                progress = ProgressMeter.Progress(
-                    length(chunk_combs); 
-                    desc="Chunk $chunk_idx/$n_chunks: ",
-                    enabled=true,
-                    output=stderr,  # ProgressMeter outputs to stderr by default
-                    dt=5.0  # Update every 5 seconds
-                )
-                
-                ProgressMeter.progress_pmap(enumerate(chunk_combs); progress) do (i, comb)
-                    try
-                        result = run_single(comb, output_params, PhilPopABM; adata=shap_adata, n=39, shock=one_shock)
-                        put!(result_channel, (start_idx + i - 1, result[1], result[2]))
-                    catch e
-                        worker_id = myid()
-                        error_message = sprint(showerror, e, catch_backtrace())
-                        println(stderr, "ERROR [Worker $worker_id]: $error_message")
-                        put!(result_channel, (start_idx + i - 1, DataFrame(), DataFrame()))
-                    end
-                end
-                close(result_channel)  # Signal completion by closing
+        
+        # Set up progress meter
+        progress = ProgressMeter.Progress(
+            length(chunk_combs); 
+            desc="Chunk $chunk_idx/$n_chunks: ",
+            enabled=true,
+            output=stderr,  # ProgressMeter outputs to stderr by default
+            dt=5.0  # Update every 5 seconds
+        )
+        # Run simulations
+        ProgressMeter.progress_pmap(enumerate(chunk_combs); progress) do (i, comb)
+            try
+                sim_df, pop_df = run_single(comb, output_params, PhilPopABM; adata=shap_adata, n=39, shock=one_shock)
+                put!(result_channel, (start_idx + i - 1, sim_df, pop_df))
+            catch e
+                worker_id = myid()
+                error_message = sprint(showerror, e, catch_backtrace())
+                println(stderr, "ERROR [Worker $worker_id]: $error_message")
+                put!(result_channel, (start_idx + i - 1, DataFrame(), DataFrame()))
             end
         end
 
         valid_count, invalid_count = fetch(save_task)
         log_info("Chunk $chunk_idx processed: $valid_count valid results, $invalid_count invalid results")
         
+        # Now safe to close the channel
+        close(result_channel)
         # Force garbage collection after processing chunk
         GC.gc()
 
@@ -272,9 +276,6 @@ for flood_shock in flood_years
         end
 
         log_info("Flood shock year $flood_shock processed")
-        open(joinpath(output_dir, "status.txt"), "w") do io
-            println(io, "Flood shock year $flood_shock processed")
-        end
 
         # Update status file for monitoring
         open(joinpath(output_dir, "status.txt"), "w") do io
