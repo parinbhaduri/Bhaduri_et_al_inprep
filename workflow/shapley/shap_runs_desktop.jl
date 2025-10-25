@@ -4,13 +4,8 @@ Pkg.activate(".")
 Pkg.instantiate()
 
 
-using Distributed, SlurmClusterManager
-
-
-addprocs(SlurmManager())
-
-#using Distributed
-#addprocs(12, exeflags="--project=$(Base.active_project())")
+using Distributed
+addprocs(20, exeflags="--project=$(Base.active_project())")
 
 # instantiate and precompile environment
 @everywhere begin
@@ -62,12 +57,12 @@ events = combine(groupby(haz_cat, "category")) do group
     )
 end
 
-flood_years = [1981,1987,1991,1996] #vcat(events.year_min,events.year_med, events.year_max)
+flood_years = [1985,2018,1989] #vcat(events.year_min,events.year_med, events.year_max)
 one_shock = true
 repeat_shocks = false
 
 # Set up directories and logging
-output_dir = joinpath(@__DIR__,"data","shap_$(ENV["SLURM_JOB_ID"])")
+output_dir = joinpath(@__DIR__,"data","shap_DESKTOP")
 mkpath(output_dir)
 
 data_dir = joinpath(@__DIR__,"data","shap_runs")
@@ -99,7 +94,7 @@ end
 
 # Log start of process
 log_info("Starting script with $(nworkers()) workers")
-log_info("SLURM Job ID: $(get(ENV, "SLURM_JOB_ID", "unknown"))")
+#log_info("SLURM Job ID: $(get(ENV, "SLURM_JOB_ID", "unknown"))")
 log_info("Results will be saved to: $output_dir")
 
 
@@ -143,6 +138,7 @@ for flood_shock in flood_years
     end
 
     # Set up data file 
+    #=
     filename = joinpath(data_dir,"$(flood_shock)_abm_data_$(ENV["SLURM_JOB_ID"]).h5")
     n_years = 20
     n_agents = 755
@@ -168,9 +164,9 @@ for flood_shock in flood_years
         write(file, "n_years", n_years)
         write(file, "price_vars", string.(shap_adata[9:end]))    
     end
-    
+    =#
     # Set up pop shares during shock data file 
-    pop_share_file = joinpath(data_dir,"$(flood_shock)_pop_share_data_$(ENV["SLURM_JOB_ID"]).h5")
+    pop_share_file = joinpath(data_dir,"$(flood_shock)_pop_share_data_DESKTOP.h5")
 
     h5open(pop_share_file, "w") do file
         # Create datasets with chunking for efficient I/O
@@ -207,7 +203,7 @@ for flood_shock in flood_years
         log_info("Starting chunk $chunk_idx of $n_chunks (combinations $start_idx to $end_idx)")
 
         # Create a channel to stream results
-        result_channel = RemoteChannel(() -> Channel{Tuple{Int, DataFrame, DataFrame}}(nworkers() * 2)) # 
+        result_channel = RemoteChannel(() -> Channel{Tuple{Int, DataFrame}}(nworkers() * 2)) # 
 
         # Async task to save results as they arrive
         save_task = @async begin
@@ -217,10 +213,10 @@ for flood_shock in flood_years
     
             while processed_count < length(chunk_combs)
                 try
-                    idx, sim_df, pop_df = take!(result_channel)
+                    idx, pop_df = take!(result_channel)
                     #idx, sim_df, pop_df = results
                     try  
-                        save_model_data!(filename, idx, sim_df, n_agents, n_years)
+                        #save_model_data!(filename, idx, sim_df, n_agents, n_years)
                         save_pop_share_data!(pop_share_file, idx, pop_df)
                         valid_count += 1
                     catch e
@@ -252,13 +248,13 @@ for flood_shock in flood_years
         # Run simulations
         ProgressMeter.progress_pmap(enumerate(chunk_combs); progress) do (i, comb)
             try
-                sim_df, pop_df = run_single(comb, output_params, PhilPopABM; adata=shap_adata, n=20, shock=one_shock)
-                put!(result_channel, (start_idx + i - 1, sim_df, pop_df))
+                pop_df = run_pop_single(comb, output_params, PhilPopABM; adata=shap_adata, n=20, shock=one_shock)
+                put!(result_channel, (start_idx + i - 1, pop_df))
             catch e
                 worker_id = myid()
                 error_message = sprint(showerror, e, catch_backtrace())
                 println(stderr, "ERROR [Worker $worker_id]: $error_message")
-                put!(result_channel, (start_idx + i - 1, DataFrame(), DataFrame()))
+                put!(result_channel, (start_idx + i - 1, DataFrame()))
             end
         end
 

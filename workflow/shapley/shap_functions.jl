@@ -192,6 +192,28 @@ function run_single(
     return (data_df, pop_shares_df)
 end
 
+#Function to run model instance and collect pop share data ONLY
+function run_pop_single(
+    params::Tuple,
+    output_params::Vector{Symbol},
+    initialize;
+    n = 1,
+    adata=shap_adata,
+    shock=false, #Whether we're simulating one large flood shock (true) or multiple small (false)
+    kwargs...,
+)
+    output_params_dict = Dict(output_params .=> params)
+    model = initialize(;output_params_dict...)
+    #Run
+    pop_shares_df = DataFrame() 
+    if shock
+        step!(model,4) #Run till year before flood shock
+        #Collect shares of agents in every block group
+        pop_shares_df = shock_pop_shares(model)
+    end
+    return pop_shares_df
+end
+
 #Write data to hdf5 file  
 function save_model_data!(filename, run_idx, df, n_agents=755, n_years=40)
     h5open(filename, "r+") do file
