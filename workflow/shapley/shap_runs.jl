@@ -220,7 +220,7 @@ for flood_shock in flood_years
                     idx, sim_df, pop_df = take!(result_channel)
                     #idx, sim_df, pop_df = results
                     try  
-                        save_model_data!(filename, idx, sim_df, n_agents, n_years)
+                        save_model_data!(filename, idx, sim_df, n_agents, n_years+1)
                         save_pop_share_data!(pop_share_file, idx, pop_df)
                         valid_count += 1
                     catch e
