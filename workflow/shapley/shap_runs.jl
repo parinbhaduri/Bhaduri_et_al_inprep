@@ -149,14 +149,14 @@ for flood_shock in flood_years
     
     h5open(filename, "w") do file
         # Create datasets with chunking for efficient I/O
-        chunk_size = (1, n_agents, n_years, 1)
+        chunk_size = (1, n_agents, n_years+1, 1)
             
         # Main data array: (runs, agents, years, variables)
-        create_dataset(file, "pop_data", Float32, (n_combs, n_agents, n_years, 6),
+        create_dataset(file, "pop_data", Float32, (n_combs, n_agents, n_years+1, 6),
                         chunk=chunk_size, deflate=9, shuffle=true
         )
 
-        create_dataset(file, "price_data", Float32, (n_combs, n_agents, n_years, 6),
+        create_dataset(file, "price_data", Float32, (n_combs, n_agents, n_years+1, 6),
                         chunk=chunk_size, deflate=9, shuffle=true
         )  
         # Metadata
@@ -275,11 +275,11 @@ for flood_shock in flood_years
             println(io, "Finished processing chunk $chunk_idx at $(Dates.format(now(), "yyyy-mm-dd HH:MM:SS"))")
         end
 
-        log_info("Flood shock year $flood_shock processed")
+        log_info("Flood shock year $flood_shock processed (chunk $chunk_idx of $n_chunks)")
 
         # Update status file for monitoring
         open(joinpath(output_dir, "status.txt"), "w") do io
-            println(io, "Flood shock year $flood_shock processed")
+            println(io, "Flood shock year $flood_shock processed (chunk $chunk_idx of $n_chunks)")
             println(io, "Completed $chunk_idx of $n_chunks chunks")
             println(io, "Last update: $(Dates.format(now(), "yyyy-mm-dd HH:MM:SS"))")
             println(io, "Valid results in last chunk: $valid_count")
