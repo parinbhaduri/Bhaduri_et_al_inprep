@@ -62,8 +62,8 @@ events = combine(groupby(haz_cat, "category")) do group
     )
 end
 
-flood_years = [1981,1987,1991,1996] #vcat(events.year_min,events.year_med, events.year_max)
-one_shock = true
+flood_years = [2018,1989] #vcat(events.year_min,events.year_med, events.year_max)
+one_shock = false
 repeat_shocks = false
 
 # Set up directories and logging
@@ -168,7 +168,7 @@ for flood_shock in flood_years
         write(file, "n_years", n_years)
         write(file, "price_vars", string.(shap_adata[9:end]))    
     end
-    
+    #=
     # Set up pop shares during shock data file 
     pop_share_file = joinpath(data_dir,"$(flood_shock)_pop_share_data_$(ENV["SLURM_JOB_ID"]).h5")
 
@@ -191,7 +191,7 @@ for flood_shock in flood_years
         write(file, "n_cat_combo", 9)
             
     end
-
+    =# 
    
     
 
@@ -221,7 +221,7 @@ for flood_shock in flood_years
                     #idx, sim_df, pop_df = results
                     try  
                         save_model_data!(filename, idx, sim_df, n_agents, n_years+1)
-                        save_pop_share_data!(pop_share_file, idx, pop_df)
+                        #save_pop_share_data!(pop_share_file, idx, pop_df)
                         valid_count += 1
                     catch e
                         log_error("Error saving result $idx: $(sprint(showerror, e))")
