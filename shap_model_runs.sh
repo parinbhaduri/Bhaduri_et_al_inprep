@@ -3,7 +3,7 @@
 #SBATCH --mail-user=pbb62@cornell.edu
 #SBATCH --mail-type=ALL
 #SBATCH --nodes=6
-#SBATCH --ntasks-per-node=75
+#SBATCH --ntasks-per-node=50
 #SBATCH --output=workflow/shapley/output_text.txt
 #SBATCH --error=workflow/shapley/error_text.txt
 #SBATCH --exclusive
@@ -23,4 +23,4 @@ echo "SLURM_CPUS_ON_NODE = $SLURM_CPUS_ON_NODE"
 
 
 # Run the Julia code
-julia +1.10 workflow/shapley/shap_runs.jl
+julia +1.10 workflow/shapley/shap_runs_desktop.jl
