@@ -107,7 +107,8 @@ function shock_pop_shares(model::ABM)
     group = Vector{Int}(undef, n)
     occ_cat = Vector{Int}(undef, n)
     income = Vector{Float64}(undef, n)
-    hh_pop = Vector{Float64}(undef, n)
+    hh_pop = Vector{Float64}(undef, n) #Number of households per agent
+    pop = Vector{Float64}(undef, n) #Number of people per agent
 
     for (i, id) in enumerate(hh_ids)
         agent = model[id]
@@ -115,17 +116,19 @@ function shock_pop_shares(model::ABM)
         group[i] = agent.group
         occ_cat[i] = agent.occ_cat
         income[i] = agent.income
-        hh_pop[i] = agent.no_hhs_per_agent * agent.hh_size
+        hh_pop[i] = agent.no_hhs_per_agent
+        pop[i] = agent.no_hhs_per_agent * agent.hh_size
     end
 
-    ag_data = DataFrame(; bg_id, group, occ_cat, income, hh_pop)
+    ag_data = DataFrame(; bg_id, group, occ_cat, income, hh_pop, pop)
 
     filter!(:bg_id => x -> x > 0, ag_data) #exclude Queues
     cat_counts = combine(
             groupby(ag_data, [:bg_id, :group, :occ_cat]),
             nrow => :count,
             :income => sum => :TotalIncome,
-            :hh_pop => sum => :TotalPop,
+            :hh_pop => sum => :TotalHHPop,
+            :pop => sum => :TotalPop,
     )
 
     # Create complete grid of all group-occ_cat combinations to ensure consistent size
@@ -142,6 +145,7 @@ function shock_pop_shares(model::ABM)
     result = leftjoin(complete_grid, cat_counts, on=[:bg_id, :group, :occ_cat])
     result.count = coalesce.(result.count, 0)
     result.TotalIncome = coalesce.(result.TotalIncome, 0.0)
+    result.TotalHHPop = coalesce.(result.TotalHHPop, 0.0)
     result.TotalPop = coalesce.(result.TotalPop, 0.0)
     #Record BG GEOIDs
     result.GEOID = [model[id].GEOID for id in result.bg_id]

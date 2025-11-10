@@ -3,9 +3,13 @@ import Pkg
 Pkg.activate(".")
 Pkg.instantiate()
 
+using Distributed, SlurmClusterManager
 
-using Distributed
-addprocs(20, exeflags="--project=$(Base.active_project())")
+
+addprocs(SlurmManager())
+
+#using Distributed
+#addprocs(20, exeflags="--project=$(Base.active_project())")
 
 # instantiate and precompile environment
 @everywhere begin
@@ -57,12 +61,13 @@ events = combine(groupby(haz_cat, "category")) do group
     )
 end
 
-flood_years = [1985,2018,1989] #vcat(events.year_min,events.year_med, events.year_max)
+flood_years = [2011,1989,1996,1991,2018,1987] #vcat(events.year_min,events.year_med, events.year_max)
 one_shock = true
 repeat_shocks = false
 
 # Set up directories and logging
-output_dir = joinpath(@__DIR__,"data","shap_DESKTOP")
+output_dir = joinpath(@__DIR__,"data","shap_$(ENV["SLURM_JOB_ID"])")
+#output_dir = joinpath(@__DIR__,"data","shap_DESKTOP")
 mkpath(output_dir)
 
 data_dir = joinpath(@__DIR__,"data","shap_runs")
@@ -138,6 +143,8 @@ for flood_shock in flood_years
     end
 
     # Set up data file 
+    n_years = 20
+    n_agents = 755
     #=
     filename = joinpath(data_dir,"$(flood_shock)_abm_data_$(ENV["SLURM_JOB_ID"]).h5")
     n_years = 20
@@ -166,20 +173,21 @@ for flood_shock in flood_years
     end
     =#
     # Set up pop shares during shock data file 
-    pop_share_file = joinpath(data_dir,"$(flood_shock)_pop_share_data_DESKTOP.h5")
+    #pop_share_file = joinpath(data_dir,"$(flood_shock)_pop_share_data_DESKTOP.h5")
+    pop_share_file = joinpath(data_dir,"$(flood_shock)_pop_share_data_$(ENV["SLURM_JOB_ID"]).h5")
 
     h5open(pop_share_file, "w") do file
         # Create datasets with chunking for efficient I/O
-        chunk_size = (1,9,6) 
+        chunk_size = (1,9,7) 
             
         # Main data array: (runs, agents, years, variables)
-        create_dataset(file, "pop_share_data", Float32, (n_combs, n_agents*9, 6), 
+        create_dataset(file, "pop_share_data", Float64, (n_combs, n_agents*9, 7), 
                         chunk=chunk_size, deflate=9, shuffle=true
         )
     
         # Metadata
         write(file, "categories", ["low", "middle","high"])
-        write(file, "column_names", ["GEOID", "agent group","housing cat", "count", "income", "household pop."])
+        write(file, "column_names", ["GEOID", "agent group","housing cat", "agent count", "income", "household count", "pop. count"])
         write(file, "n_runs", n_combs)
         write(file, "n_agents", n_agents)
         write(file, "GEOID", unique(phil_bg.GEOID)) 
@@ -271,11 +279,11 @@ for flood_shock in flood_years
             println(io, "Finished processing chunk $chunk_idx at $(Dates.format(now(), "yyyy-mm-dd HH:MM:SS"))")
         end
 
-        log_info("Flood shock year $flood_shock processed")
+        log_info("Flood shock year $flood_shock processed (chunk $chunk_idx of $n_chunks)")
 
         # Update status file for monitoring
         open(joinpath(output_dir, "status.txt"), "w") do io
-            println(io, "Flood shock year $flood_shock processed")
+            println(io, "Flood shock year $flood_shock processed (chunk $chunk_idx of $n_chunks)")
             println(io, "Completed $chunk_idx of $n_chunks chunks")
             println(io, "Last update: $(Dates.format(now(), "yyyy-mm-dd HH:MM:SS"))")
             println(io, "Valid results in last chunk: $valid_count")
