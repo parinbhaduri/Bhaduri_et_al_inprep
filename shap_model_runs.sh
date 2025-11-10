@@ -23,4 +23,4 @@ echo "SLURM_CPUS_ON_NODE = $SLURM_CPUS_ON_NODE"
 
 
 # Run the Julia code
-julia +1.10 workflow/shapley/shap_runs.jl
+julia +1.10 workflow/shapley/shap_runs_desktop.jl
