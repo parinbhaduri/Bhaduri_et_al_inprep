@@ -31,32 +31,38 @@ end
     using LinearAlgebra
 end
 
-@everywhere include(joinpath(dirname(@__DIR__),"src/data_collect.jl"))
-@everywhere include("calib_functions.jl")
+@everywhere begin 
+    include(joinpath(dirname(@__DIR__),"src","data_include.jl"))
+    include(joinpath(dirname(@__DIR__),"src","functions.jl"))
+    include(joinpath(dirname(@__DIR__),"src","data_collect.jl"))
+end
+    
 
-
-calib_params = Dict(
-    :risk_averse=>0.3,#collect(range(0.1,0.9,step=0.2)),
-    :build_inc_perc=>0.25,#[0.05,0.1,0.25, 0.4],
-    :price_inc_perc=>0.1,#[0.1,0.15,0.2],
-    :rhea_coef=>0.7,
-    :base_move=>0.01,#collect(range(0.0, 0.03, step = 0.005)),
-    :prop_l=>0.51,#[0.3,0.5,0.7],
-    :env_amen_l=>0.52,#[0.3,0.5,0.7],
-    :prop_m=>0.53,#[0.3,0.5,0.7],
-    :env_amen_m=>0.54,#[0.3,0.5,0.7],
-    :prop_h=>0.55,#[0.3,0.5,0.7],
-    :env_amen_h=>0.56,#[0.3,0.5,0.7],
-    :penalty=>0.57,
-    :flood_coefficient=>0.58,#[0.3,0.5,0.7],
-    :seed=>collect(range(1000,1999))
-)
-
-chunk_size = 100  # Adjust based on memory requirements
+chunk_size = 256000  # Adjust based on memory requirements
 
 # Set up directories and logging
 output_dir = "./data/test_results_$(ENV["SLURM_JOB_ID"])"
 mkpath(output_dir)
+
+#Load calibrated parameter combinations
+param_path = joinpath(dirname(@__DIR__),"calibration","data/param_comb_final_mean_thresh_6_ens_250.csv")
+calib_combs = DataFrame(CSV.File(param_path))[:,1:14]
+# Set up additional parameters
+add_params = OrderedDict(
+    :seed=>collect(range(1000,1249))
+)
+
+# Extract parameter combinations and names
+p_combs = collect((Tuple(row) for row in eachrow(calib_combs)))
+output_params = collect(Symbol.(names(calib_combs)))
+append!(output_params,collect(keys(add_params)))
+
+# Generate all combinations outside of flood shock characteristics
+mod_combs = [(c..., s) for (c, s) in Iterators.product(p_combs,values(add_params)...)];
+param_matrix = stack([collect(tuple) for tuple in vec(mod_combs)])'
+shap_param_df = DataFrame(param_matrix, output_params)
+
+CSV.write(joinpath(output_dir,"param_runs_shap.csv"), shap_param_df)
 
 # Set up logging files
 run_log = joinpath(output_dir, "run_log.txt")
@@ -88,12 +94,9 @@ log_info("SLURM Job ID: $(get(ENV, "SLURM_JOB_ID", "unknown"))")
 log_info("Results will be saved to: $output_dir")
 
 
-# Extract parameter combinations and names
-combs = collect(Iterators.product(values(calib_params)...))
-output_params = collect(keys(calib_params))
 
 # Determine total combinations and chunk size
-n_combs = length(combs)
+n_combs = length(mod_combs)
 n_chunks = ceil(Int, n_combs / chunk_size)
 
 log_info("Processing $n_combs parameter combinations in $n_chunks chunks")
@@ -108,7 +111,7 @@ for chunk_idx in 1:n_chunks
     # Get subset of combinations for this chunk
     start_idx = (chunk_idx - 1) * chunk_size + 1
     end_idx = min(chunk_idx * chunk_size, n_combs)
-    chunk_combs = combs[start_idx:end_idx]
+    chunk_combs = mod_combs[start_idx:end_idx]
     
     log_info("Starting chunk $chunk_idx of $n_chunks (combinations $start_idx to $end_idx)")
     
@@ -131,7 +134,7 @@ for chunk_idx in 1:n_chunks
     chunk_results = try
         ProgressMeter.progress_pmap(chunk_combs; progress) do comb
             try
-                # Call your simulation function - REPLACE WITH YOUR ACTUAL FUNCTION CALL
+                # Run Simulation
                 run_single(comb, output_params, PhilABM; adata=calib_adata, mdata=calib_mdata, n=39)
             catch e
                 # Log worker errors but don't fail the whole chunk

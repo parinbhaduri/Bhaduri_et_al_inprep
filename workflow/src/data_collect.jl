@@ -16,10 +16,14 @@ hh_high(agent) = agent.group == 3 ? agent.no_hhs_per_agent*agent.hh_size : 0
 hh_diff_low(agent) = agent.group == 1 && agent.occ_cat != 1 ? 1 : 0 #Low Income Agents not living in Low Income Housing
 hh_diff_med(agent) = agent.group == 2 && agent.occ_cat != 2 ? 1 : 0
 hh_diff_high(agent) = agent.group == 3 && agent.occ_cat != 3 ? 1 : 0
-#Occupancy Pop
+#Occupancy count
 occ_low(agent) = agent.occupied_units[1]
 occ_med(agent) = agent.occupied_units[2]
 occ_high(agent) = agent.occupied_units[3]
+#Vacancy count
+vac_low(agent) = agent.available_units[1]
+vac_med(agent) = agent.available_units[2]
+vac_high(agent) = agent.available_units[3]
 #Housing Prices
 price_low(agent) = agent.new_price[1]
 price_med(agent) = agent.new_price[2]
@@ -107,3 +111,6 @@ calib_mdata = [moved_low, moved_med, moved_high, flpn_pop_low, flpn_pop_med, flp
 #Shapley data collection
 shap_adata = [:pos, :GEOID, ag_low, ag_med, ag_high, hh_low, hh_med, hh_high, 
                 price_low, price_med, price_high, cap_low, cap_med, cap_high]
+
+shap_price_adata = [:pos, :GEOID, ag_low, ag_med, ag_high, hh_low, hh_med, hh_high, 
+                price_low, price_med, price_high, vac_low, vac_med, vac_high, cap_low, cap_med, cap_high]
