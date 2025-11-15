@@ -10,5 +10,10 @@ addprocs(12, exeflags="--project=$(Base.active_project())")
     using LinearAlgebra
 end
 
-@everywhere include("data_collect.jl")
-@everywhere include("config.jl")
+@everywhere begin
+    include("data_include.jl")
+    include("functions.jl")
+    include("data_collect.jl")
+    
+    phil_cbsa_base_pop = load_pop(0)
+end 
