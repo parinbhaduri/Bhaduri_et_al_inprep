@@ -35,6 +35,7 @@ end
     include(joinpath(dirname(@__DIR__),"src","data_include.jl"))
     include(joinpath(dirname(@__DIR__),"src","functions.jl"))
     include(joinpath(dirname(@__DIR__),"src","data_collect.jl"))
+    phil_cbsa_base_pop = load_pop(0)
 end
     
 
