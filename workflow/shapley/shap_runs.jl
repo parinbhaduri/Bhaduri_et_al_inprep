@@ -62,8 +62,8 @@ events = combine(groupby(haz_cat, "category")) do group
     )
 end
 
-flood_years = [2018,1989] #vcat(events.year_min,events.year_med, events.year_max)
-one_shock = false
+flood_years = [2011,1989,1996] #vcat(events.year_min,events.year_med, events.year_max)
+one_shock = true
 repeat_shocks = false
 
 # Set up directories and logging
@@ -121,7 +121,7 @@ shap_param_df = DataFrame(param_matrix, output_params)
 
 CSV.write(joinpath(output_dir,"param_runs_shap.csv"), shap_param_df)
 
-append!(output_params, [:flood_event_year, :flood_repeat])
+append!(output_params, [:flood_event_year, :flood_shock])
 
 # Determine total combinations and chunk size
 chunk_size = 39875  # Adjust based on memory requirements
@@ -132,7 +132,7 @@ for flood_shock in flood_years
     log_info("Starting flood shock year $flood_shock")
     
     #Create combinations with flood shock characteristics included
-    combs = [(c..., p, s, flood_shock, repeat_shocks) for (c, p, s) in Iterators.product(p_combs,values(add_params)...)];
+    combs = [(c..., p, s, flood_shock, one_shock) for (c, p, s) in Iterators.product(p_combs,values(add_params)...)];
     n_combs = length(combs)
     n_chunks = ceil(Int, n_combs / chunk_size)
 
@@ -143,7 +143,7 @@ for flood_shock in flood_years
     end
 
     # Set up data file 
-    filename = joinpath(data_dir,"$(flood_shock)_abm_data_$(ENV["SLURM_JOB_ID"]).h5")
+    filename = joinpath(data_dir,"$(flood_shock)_abm_data.h5")
     n_years = 20
     n_agents = 755
     
@@ -168,16 +168,16 @@ for flood_shock in flood_years
         write(file, "n_years", n_years)
         write(file, "price_vars", string.(shap_adata[9:end]))    
     end
-    #=
+    
     # Set up pop shares during shock data file 
-    pop_share_file = joinpath(data_dir,"$(flood_shock)_pop_share_data_$(ENV["SLURM_JOB_ID"]).h5")
+    pop_share_file = joinpath(data_dir,"$(flood_shock)_pop_share_data.h5")
 
     h5open(pop_share_file, "w") do file
         # Create datasets with chunking for efficient I/O
         chunk_size = (1,9,6) 
             
         # Main data array: (runs, agents, years, variables)
-        create_dataset(file, "pop_share_data", Float32, (n_combs, n_agents*9, 6), 
+        create_dataset(file, "pop_share_data", Float64, (n_combs, n_agents*9, 6), 
                         chunk=chunk_size, deflate=9, shuffle=true
         )
     
@@ -191,7 +191,7 @@ for flood_shock in flood_years
         write(file, "n_cat_combo", 9)
             
     end
-    =# 
+     
    
     
 
@@ -252,7 +252,7 @@ for flood_shock in flood_years
         # Run simulations
         ProgressMeter.progress_pmap(enumerate(chunk_combs); progress) do (i, comb)
             try
-                sim_df, pop_df = run_single(comb, output_params, PhilPopABM; adata=shap_adata, n=20, shock=one_shock)
+                sim_df, pop_df = run_shap_single(comb, output_params, PhilPopABM; adata=shap_adata, n=20, shock=one_shock)
                 put!(result_channel, (start_idx + i - 1, sim_df, pop_df))
             catch e
                 worker_id = myid()

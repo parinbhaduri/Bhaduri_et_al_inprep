@@ -30,8 +30,9 @@ end
 end
 
 
-@everywhere include(joinpath(dirname(@__DIR__),"src/data_collect.jl"))
+@everywhere include(joinpath(dirname(@__DIR__),"src","data_collect.jl"))
 @everywhere include("calib_functions.jl")
+@everywhere phil_cbsa_base_pop = load_pop(0)
 
 
 seed = collect(range(1000,1249))
