@@ -9,8 +9,8 @@ using Distributed, SlurmClusterManager
 
 addprocs(SlurmManager())
 
-using Distributed
-addprocs(12, exeflags="--project=$(Base.active_project())")
+#using Distributed
+#addprocs(12, exeflags="--project=$(Base.active_project())")
 
 # instantiate and precompile environment
 @everywhere begin
