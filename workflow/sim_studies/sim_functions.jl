@@ -4,13 +4,13 @@
 function simul_plot(adf, group_col; leg = :outertopright, color = palette(:BrBg), lim = (7000,15000))
     plots = []
     push!(plots, Plots.plot(adf.time, adf.sum_hh_low_HH, group = adf[:, group_col], legend=leg, palette = color, linewidth=2, ylimits=lim, title="Low Income Pop."))
-    push!(plots, Plots.plot(adf.time, adf.sum_occ_low_BG, group = adf[:, group_col], legend=leg, palette = color, linewidth=2, ylimits=lim, title="Low Income Residents"))
+    push!(plots, Plots.plot(adf.time, adf.sum_occ_low_BG, group = adf[:, group_col], legend=leg, palette = color, linewidth=2, ylimits=(7000,20000), title="Low Income Occupants (agents)"))
 
     push!(plots, Plots.plot(adf.time, adf.sum_hh_med_HH, group = adf[:, group_col], legend=leg, palette = color, linewidth=2, ylimits=lim, title="Medium Income Pop."))
-    push!(plots, Plots.plot(adf.time, adf.sum_occ_med_BG, group = adf[:, group_col], legend=leg, palette = color, linewidth=2, ylimits=lim, title="Medium Income Residents"))
+    push!(plots, Plots.plot(adf.time, adf.sum_occ_med_BG, group = adf[:, group_col], legend=leg, palette = color, linewidth=2, ylimits=(7000,20000), title="Medium Income Occupants (agents)"))
 
     push!(plots, Plots.plot(adf.time, adf.sum_hh_high_HH, group = adf[:, group_col], legend=leg, palette = color, linewidth=2, ylimits=lim, title="High Income Pop."))
-    push!(plots, Plots.plot(adf.time, adf.sum_occ_high_BG, group = adf[:, group_col], legend=leg, palette = color, linewidth=2, ylimits=lim, title="High Income Residents"))
+    push!(plots, Plots.plot(adf.time, adf.sum_occ_high_BG, group = adf[:, group_col], legend=leg, palette = color, linewidth=2, ylimits=(7000,20000), title="High Income Occupants (agents)"))
     
     return plots
 end

@@ -4,7 +4,6 @@ Pkg.activate(".")
 Pkg.instantiate()
 
 using CSV, DataFrames # read CSV of Shapley indices
-using DataFrames # data structure for indices
 using Plots # plotting library
 using ColorSchemes
 using Measures # adjust margins with explicit measures
@@ -14,23 +13,23 @@ using StatsPlots
 
 
 ### Load Data ###
-shap_indices = DataFrame(CSV.File(joinpath(out_dir, "post_process","shapley_indices","shap_indices_flpn_pop.csv")))
-shap_ind_low = DataFrame(CSV.File(joinpath(out_dir, "post_process","shapley_indices","shap_indices_flpn_low_income.csv")))
+out_dir = joinpath(@__DIR__,"data","shap_runs")
+shap_ind_high = DataFrame(CSV.File(joinpath(out_dir, "post_process","shapley_indices","test_2011_shap_indices_flpn_pop_norm_high.csv")))
+shap_ind_low = DataFrame(CSV.File(joinpath(out_dir, "post_process","shapley_indices","test_2011_shap_indices_flpn_pop_norm_low.csv")))
 
 
 function normalize_shap_groups(shap_ind)
     # assign parameters to groups by subsystem
     groups = Dict(
-        "Parameters"    => ["env_amen_l","env_amen_m","env_amen_h",
-                                "price_inc_perc","build_inc_perc","rhea_coef",
-                                "base_move","risk_averse","penalty",
-                                "prop_l","prop_m","prop_h",
-                                "flood_mem","flood_coefficient"
+        "Flood Risk Perception"    => ["risk_averse", "flood_mem","flood_coefficient"],
+        "Housing Market"    => ["price_inc_perc","build_inc_perc","rhea_coef","base_move"],                    
+        "Location Preference"    => ["env_amen_l","env_amen_m","env_amen_h",
+                                "penalty", "prop_l","prop_m","prop_h",
                             ],
         "Population"    => ["pop_no"],
-        "Internal Variability"   => ["seed"],
+        "Internal Stochasticity"   => ["seed"],
         #"Damage"   => ["damage_seed"],
-        #"Flood Hazard"   => ["intensity", "freq"],
+        "Flood Hazard"   => ["fld_extents"],
     
     )
 
@@ -47,41 +46,46 @@ function normalize_shap_groups(shap_ind)
     # normalize so the grouped shapley sums equal 1
     shap_norm = mapcols(x -> x / sum(x), shap_group[!, Not([:group])])
     insertcols!(shap_norm, 1, :group => shap_group.group)
-    group_order = ["Parameters","Population","Internal Variability"]
+    group_order = ["Flood Hazard","Flood Risk Perception","Housing Market", "Location Preference","Population","Internal Stochasticity"]
     shap_norm = shap_norm[indexin(group_order, shap_group.group), :]
     shap_permute = permutedims(shap_norm, 1)
     return shap_permute
 end
 
 shap_pop = normalize_shap_groups(shap_indices)
+shap_pop_high = normalize_shap_groups(shap_ind_high)
 shap_pop_low = normalize_shap_groups(shap_ind_low)
 
 # plot indices over time
-group_colors = [:red,:blue,:green]
+group_colors = ColorSchemes.mk_8[2:end]
 
 inch = 96
 mmx = inch / 25.4
 function plot_shapley(yrs,sdf,group_colors; leg=false)
     p_shap = areaplot(yrs, Matrix(sdf[!, Not(:group)]), xlabel="Year", ylabel="Relative Group Importance", 
-            color_palette=group_colors, guidefontsize=16, tickfontsize=12, legend=leg, 
+            color_palette=group_colors, guidefontsize=16, tickfontsize=12, legend=leg, legendcolumns=2,
             label=permutedims(names(sdf)[2:end]), legendfontsize=12, fg_color_legend=false, 
             rightmargin=5mm, topmargin=5mm, leftmargin=5mm,
     )
     #annotate!(p_shap, 2030, 1.07, text("a", :left, 18, "Helvetica Bold"))
-    Plots.xticks!(p_shap, 1980:5:2019)
-    Plots.xlims!(p_shap, (1980, 2019))
+    Plots.vline!(p_shap, [4], ls=:dash, lc=:black, lw=3, label = "Flood Shock")
+    Plots.xticks!(p_shap, yrs[1]:5:yrs[end])
+    Plots.xlims!(p_shap, (yrs[1],yrs[end]))
     Plots.ylims!(p_shap, (0, 1))
 
     return p_shap
 end
 
-shap_pop_plot = plot_shapley(yrs,shap_pop,group_colors)
-Plots.title!("Group Uncertainty Importance: Floodplain Pop.")
-shap_low_plot = plot_shapley(yrs,shap_pop_low,group_colors;leg=:right)
-Plots.title!("Group Uncertainty Importance: Low Income in Floodplain")
+yrs = collect(range(0,20))
+shap_hi_plot = plot_shapley(yrs,shap_pop_high,group_colors; leg=:outerbottom)
+#Plots.title!("Group Uncertainty Importance: Floodplain Pop.")
+savefig(shap_hi_plot,joinpath(pwd(),"figures","shapley","test_2011_shap_grid_flpn_pop_norm_high_w_leg.png"))
 
+shap_low_plot = plot_shapley(yrs,shap_pop_low,group_colors; leg=false)
+#Plots.title!("Group Uncertainty Importance: Low Income in Floodplain")
+savefig(shap_low_plot,joinpath(pwd(),"figures","shapley","test_2011_shap_grid_flpn_pop_norm_low.png"))
 
-plt = Plots.plot(shap_pop_plot, shap_low_plot, layout=(2,1), dpi=300, size=(275mmx, 210mmx))
+#plt = Plots.plot(shap_hi_plot, shap_low_plot,  layout = (1,2), dpi=300, size=(275mmx, 210mmx))
 
 savefig(plt,joinpath(pwd(),"figures","shapley","shap_grid.png"))
 
