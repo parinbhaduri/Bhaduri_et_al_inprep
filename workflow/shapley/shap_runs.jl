@@ -177,16 +177,16 @@ for flood_shock in flood_years
 
     h5open(pop_share_file, "w") do file
         # Create datasets with chunking for efficient I/O
-        chunk_size = (1,9,6) 
+        chunk_size = (1,9,7) 
             
         # Main data array: (runs, agents, years, variables)
-        create_dataset(file, "pop_share_data", Float64, (n_combs, n_agents*9, 6), 
+        create_dataset(file, "pop_share_data", Float64, (n_combs, n_agents*9, 7), 
                         chunk=chunk_size, deflate=9, shuffle=true
         )
     
         # Metadata
         write(file, "categories", ["low", "middle","high"])
-        write(file, "column_names", ["GEOID", "agent group","housing cat", "count", "income", "household pop."])
+        write(file, "column_names", ["GEOID", "agent group","housing cat", "agent count", "income", "household count", "pop. count"])
         write(file, "n_runs", n_combs)
         write(file, "n_agents", n_agents)
         write(file, "GEOID", unique(phil_bg.GEOID)) 
@@ -224,7 +224,7 @@ for flood_shock in flood_years
                     #idx, sim_df, pop_df = results
                     try  
                         save_model_data!(filename, idx, sim_df, n_agents, n_years+1)
-                        #save_pop_share_data!(pop_share_file, idx, pop_df)
+                        save_pop_share_data!(pop_share_file, idx, pop_df)
                         valid_count += 1
                     catch e
                         log_error("Error saving result $idx: $(sprint(showerror, e))")
@@ -289,86 +289,6 @@ for flood_shock in flood_years
             println(io, "Invalid results in last chunk: $invalid_count")
         end
     end
-    #= Process each chunk
-    for chunk_idx in 1:n_chunks
-        # Get subset of combinations for this chunk
-        start_idx = (chunk_idx - 1) * chunk_size + 1
-        end_idx = min(chunk_idx * chunk_size, n_combs)
-        chunk_combs = combs[start_idx:end_idx]
-        
-        log_info("Starting chunk $chunk_idx of $n_chunks (combinations $start_idx to $end_idx)")
-        
-        # Write initial progress state
-        open(progress_file, "w") do io
-            println(io, "Starting chunk $chunk_idx of $n_chunks")
-            println(io, "$(Dates.format(now(), "yyyy-mm-dd HH:MM:SS"))")
-        end
-        
-        # Set up progress meter
-        progress = ProgressMeter.Progress(
-            length(chunk_combs); 
-            desc="Chunk $chunk_idx/$n_chunks: ",
-            enabled=true,
-            output=stderr,  # ProgressMeter outputs to stderr by default
-            dt=5.0  # Update every 5 seconds
-        )
-        
-        # Run simulations for this chunk
-        chunk_results = try
-            ProgressMeter.progress_pmap(chunk_combs; progress) do comb
-                try
-                    # Run Simulation
-                    run_single(comb, output_params, PhilPopABM; adata=shap_adata, n=39, shock=one_shock)
-                catch e
-                    # Log worker errors but don't fail the whole chunk
-                    worker_id = myid()
-                    error_message = sprint(showerror, e, catch_backtrace())
-                    # Cannot directly call log_error from workers, so we print to stderr
-                    println(stderr, "ERROR [Worker $worker_id]: $error_message")
-                    return (DataFrame(), DataFrame())  # Return empty dataframe on error
-                end
-            end
-        catch e
-            # Log main process errors
-            log_error("Error in main process for chunk $chunk_idx: $(sprint(showerror, e, catch_backtrace()))")
-            Tuple{DataFrame, DataFrame}[]
-        end
-        =#       
-        
-        
-        # Check if we got any results
-        #if isempty(chunk_results)
-        #    log_error("No valid results for chunk $chunk_idx, skipping")
-        #    continue
-        #end
-        #=
-        # Process results immediately
-        log_info("Processing results for chunk $chunk_idx")
-        
-        # Count valid and invalid results
-        valid_count = 0
-        invalid_count = 0
-        
-        for (i, result) in enumerate(chunk_results)
-            try
-                sim_df, pop_df = result
-                save_model_data!(filename, (start_idx+i)-1, sim_df, n_agents, n_years)
-                save_pop_share_data!(pop_share_file, (start_idx+i)-1, pop_df)
-                valid_count += 1
-            catch e
-                log_error("Error processing result $i in chunk $chunk_idx: $(sprint(showerror, e))")
-                invalid_count += 1
-            end
-        end
-        =#
-        
-        
-        
-    
-    #end
-
-    
-    
 end
 
 

@@ -14,7 +14,7 @@ end
 
 build_params = Dict(
     #:build_perc=>[0.05,0.1,0.25, 0.4],
-    :build_perc=>collect(range(0.0,0.05,step=0.005)),
+    :build_perc=>[0.01,0.02,0.1,0.2],#collect(range(0.0,0.05,step=0.005)),
     :no_of_years=>39,
     :start_year=>1981, 
     :seed=>1500
@@ -44,7 +44,7 @@ using Plots
 using ColorSchemes
 include("sim_functions.jl")
 
-build_plots = simul_plot(adf_build, :build_perc; leg = :outertopright, color = palette(:BrBG_11))
+build_plots = simul_plot(adf_build, :build_perc; lim = (150000,400000), leg = :outertopright, color = palette(:BrBG_11))
 plot(build_plots..., layout=(3, 2), size = (1100, 1000), plot_title = "Pop. Dynamics when changing Build%")
 #savefig(joinpath(@__DIR__,"sim_data","figures", "sim_study_build_perc_no_price_pop.png"))
 
@@ -53,7 +53,7 @@ plot(build_market_plots..., layout=(3, 2), size = (1100, 1000), plot_title = "Ma
 #savefig(joinpath(@__DIR__,"sim_data","figures", "sim_study_build_perc_no_price_mark.png"))
 
 
-price_plots = simul_plot(adf_price, :price_perc; color = palette(:BrBG_11))
+price_plots = simul_plot(adf_price, :price_perc; lim = (150000,400000), color = palette(:BrBG_11))
 plot(price_plots..., layout=(3, 2), size = (1100, 1000), plot_title = "Pop. Dynamics when changing Price %")
 price_market_plots = simul_market(adf_price,mdf_price, :price_perc; price_lim =(1e5,2e6), color = palette(:BrBG_11))
 plot(price_market_plots..., layout=(3, 2), size = (1100, 1000), plot_title = "Market Dynamics when changing Price %")

@@ -31,9 +31,11 @@ end
     using HDF5
 end
 
-
-@everywhere include(joinpath(dirname(@__DIR__),"src/data_collect.jl"))
-@everywhere include("shap_functions.jl")
+@everywhere begin 
+    include(joinpath(dirname(@__DIR__),"src","data_include.jl"))
+    include(joinpath(dirname(@__DIR__),"src","functions.jl"))
+    include(joinpath(dirname(@__DIR__),"src","data_collect.jl"))
+end
 
 #Load calibrated parameter combinations
 param_path = joinpath(dirname(@__DIR__),"calibration","data/param_comb_final_mean_thresh_6_ens_250.csv")
@@ -41,7 +43,7 @@ calib_combs = DataFrame(CSV.File(param_path))[:,1:14]
 
 #Load flood hazard categories
 haz_cat = DataFrame(CSV.File(joinpath(dirname(pwd()), "philadelphia-data","model_inputs", "phil_flood_hist_categories.csv")))
-
+#=
 events = combine(groupby(haz_cat, "category")) do group
     # Find indices for min and max flood extents
     min_idx = argmin(group.total_extents)
@@ -60,8 +62,8 @@ events = combine(groupby(haz_cat, "category")) do group
         max_extent = group.total_extents[max_idx]
     )
 end
-
-flood_years = [2011,1989,1996,1991,2018,1987] #vcat(events.year_min,events.year_med, events.year_max)
+=#
+flood_years = [2011,1989,1996]#,1991,2018,1987] #vcat(events.year_min,events.year_med, events.year_max)
 one_shock = true
 repeat_shocks = false
 
@@ -121,7 +123,7 @@ shap_param_df = DataFrame(param_matrix, output_params)
 
 CSV.write(joinpath(output_dir,"param_runs_shap.csv"), shap_param_df)
 
-append!(output_params, [:flood_event_year, :flood_repeat])
+append!(output_params, [:flood_event_year, :flood_shock])
 
 # Determine total combinations and chunk size
 chunk_size = 39875  # Adjust based on memory requirements
@@ -132,7 +134,7 @@ for flood_shock in flood_years
     log_info("Starting flood shock year $flood_shock")
     
     #Create combinations with flood shock characteristics included
-    combs = [(c..., p, s, flood_shock, repeat_shocks) for (c, p, s) in Iterators.product(p_combs,values(add_params)...)];
+    combs = [(c..., p, s, flood_shock, one_shock) for (c, p, s) in Iterators.product(p_combs,values(add_params)...)];
     n_combs = length(combs)
     n_chunks = ceil(Int, n_combs / chunk_size)
 
@@ -174,7 +176,7 @@ for flood_shock in flood_years
     =#
     # Set up pop shares during shock data file 
     #pop_share_file = joinpath(data_dir,"$(flood_shock)_pop_share_data_DESKTOP.h5")
-    pop_share_file = joinpath(data_dir,"$(flood_shock)_pop_share_data_$(ENV["SLURM_JOB_ID"]).h5")
+    pop_share_file = joinpath(data_dir,"$(flood_shock)_pop_share_data.h5")
 
     h5open(pop_share_file, "w") do file
         # Create datasets with chunking for efficient I/O
@@ -289,87 +291,7 @@ for flood_shock in flood_years
             println(io, "Valid results in last chunk: $valid_count")
             println(io, "Invalid results in last chunk: $invalid_count")
         end
-    end
-    #= Process each chunk
-    for chunk_idx in 1:n_chunks
-        # Get subset of combinations for this chunk
-        start_idx = (chunk_idx - 1) * chunk_size + 1
-        end_idx = min(chunk_idx * chunk_size, n_combs)
-        chunk_combs = combs[start_idx:end_idx]
-        
-        log_info("Starting chunk $chunk_idx of $n_chunks (combinations $start_idx to $end_idx)")
-        
-        # Write initial progress state
-        open(progress_file, "w") do io
-            println(io, "Starting chunk $chunk_idx of $n_chunks")
-            println(io, "$(Dates.format(now(), "yyyy-mm-dd HH:MM:SS"))")
-        end
-        
-        # Set up progress meter
-        progress = ProgressMeter.Progress(
-            length(chunk_combs); 
-            desc="Chunk $chunk_idx/$n_chunks: ",
-            enabled=true,
-            output=stderr,  # ProgressMeter outputs to stderr by default
-            dt=5.0  # Update every 5 seconds
-        )
-        
-        # Run simulations for this chunk
-        chunk_results = try
-            ProgressMeter.progress_pmap(chunk_combs; progress) do comb
-                try
-                    # Run Simulation
-                    run_single(comb, output_params, PhilPopABM; adata=shap_adata, n=39, shock=one_shock)
-                catch e
-                    # Log worker errors but don't fail the whole chunk
-                    worker_id = myid()
-                    error_message = sprint(showerror, e, catch_backtrace())
-                    # Cannot directly call log_error from workers, so we print to stderr
-                    println(stderr, "ERROR [Worker $worker_id]: $error_message")
-                    return (DataFrame(), DataFrame())  # Return empty dataframe on error
-                end
-            end
-        catch e
-            # Log main process errors
-            log_error("Error in main process for chunk $chunk_idx: $(sprint(showerror, e, catch_backtrace()))")
-            Tuple{DataFrame, DataFrame}[]
-        end
-        =#       
-        
-        
-        # Check if we got any results
-        #if isempty(chunk_results)
-        #    log_error("No valid results for chunk $chunk_idx, skipping")
-        #    continue
-        #end
-        #=
-        # Process results immediately
-        log_info("Processing results for chunk $chunk_idx")
-        
-        # Count valid and invalid results
-        valid_count = 0
-        invalid_count = 0
-        
-        for (i, result) in enumerate(chunk_results)
-            try
-                sim_df, pop_df = result
-                save_model_data!(filename, (start_idx+i)-1, sim_df, n_agents, n_years)
-                save_pop_share_data!(pop_share_file, (start_idx+i)-1, pop_df)
-                valid_count += 1
-            catch e
-                log_error("Error processing result $i in chunk $chunk_idx: $(sprint(showerror, e))")
-                invalid_count += 1
-            end
-        end
-        =#
-        
-        
-        
-    
-    #end
-
-    
-    
+    end    
 end
 
 

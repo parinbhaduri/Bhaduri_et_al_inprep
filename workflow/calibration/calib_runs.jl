@@ -51,7 +51,7 @@ calib_params = OrderedDict(
     :env_amen_m=>[0.25, 0.75],
     :prop_h=>[0.25, 0.75],
     :env_amen_h=>[0.25, 0.75],
-    :penalty=>[0.25, 0.75, 5],
+    :penalty=>[0.25, 0.75],
     :flood_coefficient=>[0.25, 0.4], #0.75
     #:stay_prob=>[0.75, 1.0]
 )

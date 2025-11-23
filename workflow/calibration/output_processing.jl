@@ -10,7 +10,7 @@ using Statistics
 
 #Load data
 #t_d = DataFrame(CSV.File(joinpath(@__DIR__,"data/results_118418/agents_chunk_2.csv")))
-JOB_NO = 140369 #135842
+JOB_NO = 135842 #140369 #144606
 dat_dir =joinpath(@__DIR__,"data/results_$(JOB_NO)/")
 
 param_cols = ["price_inc_perc","rhea_coef","base_move",
@@ -44,6 +44,7 @@ end
 
 for file in agent_files
     df = DataFrame(CSV.File(joinpath(dat_dir,file)))
+    df.flood_mem = repeat([10],nrow(df))
     df.sum_HH = df.sum_hh_low_HH + df.sum_hh_med_HH + df.sum_hh_high_HH
     #calculate total populations
     pop_prop_df = @chain df begin
@@ -75,7 +76,7 @@ end
 params_df = innerjoin(model_params_df, agent_params_df, on=param_cols)
 
 CSV.write(joinpath(@__DIR__, "data/calib_sim_output_$(JOB_NO).csv"), params_df)
-
+#CSV.write(joinpath(@__DIR__, "data/test_param_comb_final_$(JOB_NO)_ens_250.csv"), params_df)
 
 
 
