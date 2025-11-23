@@ -70,6 +70,10 @@ end
 
 
 ###Read in data###
+## Create dict to categorize flood years by hazard size
+haz_cat = DataFrame(CSV.File(joinpath(dirname(pwd()), "philadelphia-data","model_inputs", "phil_flood_hist_categories.csv")))
+haz_dict = Dict(haz_cat.year .=> haz_cat.category)
+
 out_dir = joinpath(@__DIR__,"data","shap_runs")
 abm_data_files = filter(file -> occursin(r"abm_data.*\.h5$",file), readdir(out_dir))
 #for file in abm_data_files
@@ -82,16 +86,11 @@ println(h5file["pop_vars"][:])
 println("Price Dataset size: ", size(price_dat))
 println(h5file["price_vars"][:])
 
-pop_file = h5open(joinpath(out_dir,pop_filename), "r")
-pop_share_dat = pop_file["pop_share_data"]
-
-println("Pop Share Dataset size: ", size(pop_share_dat))
-println(pop_file["column_names"][:])
-
-
 #Subset to areas with exposed properties 
 flood_year = read(h5file["historical flood year"])
 exp_bgs = phil_flood_record[phil_flood_record[!,string(flood_year)] .> 0,"GEOID"]
+#Read in damage df 
+
 flpn_index = filter(x -> x !== nothing, indexin(exp_bgs, h5file["GEOID"][:]))
 
 println("Collecting Recovery Data for Flood Event $(flood_year)")
@@ -118,14 +117,16 @@ flpn_norm = normal_set(pop_flpn)
 
 #Save data 
 println("Saving Population Data...")
+pop_dir = joinpath(out_dir, "post_process","population",haz_dict[flood_year])
+mkpath(pop_dir)
 low_df = DataFrame(flpn_norm_low,Symbol.(1979 .+ collect(1:size(flpn_norm_low,2))))
-CSV.write(joinpath(out_dir, "post_process","population","$(flood_year)_model_outcome_flpn_pop_norm_low.csv"), low_df)
+CSV.write(joinpath(pop_dir,"$(flood_year)_model_outcome_flpn_pop_norm_low.csv"), low_df)
 med_df = DataFrame(flpn_norm_med,Symbol.(1979 .+ collect(1:size(flpn_norm_med,2))))
-CSV.write(joinpath(out_dir, "post_process","population","$(flood_year)_model_outcome_flpn_pop_norm_med.csv"), med_df)
+CSV.write(joinpath(pop_dir,"$(flood_year)_model_outcome_flpn_pop_norm_med.csv"), med_df)
 high_df = DataFrame(flpn_norm_high,Symbol.(1979 .+ collect(1:size(flpn_norm_high,2))))
-CSV.write(joinpath(out_dir, "post_process","population","$(flood_year)_model_outcome_flpn_pop_norm_high.csv"), high_df)
+CSV.write(joinpath(pop_dir,"$(flood_year)_model_outcome_flpn_pop_norm_high.csv"), high_df)
 pop_df = DataFrame(flpn_norm,Symbol.(1979 .+ collect(1:size(flpn_norm,2))))
-CSV.write(joinpath(out_dir, "post_process","population","$(flood_year)_model_outcome_flpn_pop_norm.csv"), pop_df)
+CSV.write(joinpath(pop_dir,"$(flood_year)_model_outcome_flpn_pop_norm.csv"), pop_df)
 
 # calculate price trajectories
 println("Starting Price Trajectories...")
@@ -139,12 +140,14 @@ flpn_np_high = normal_set(flpn_price_high)
 
 #Save Data
 println("Saving Price Data...")
+price_dir = joinpath(out_dir, "post_process","price",haz_dict[flood_year])
+mkpath(price_dir)
 low_np_df = DataFrame(flpn_np_low,Symbol.(1979 .+ collect(1:size(flpn_np_low,2))))
-CSV.write(joinpath(out_dir, "post_process","price","$(flood_year)_model_outcome_flpn_avg_price_norm_low.csv"), low_np_df)
+CSV.write(joinpath(price_dir,"$(flood_year)_model_outcome_flpn_avg_price_norm_low.csv"), low_np_df)
 med_np_df = DataFrame(flpn_np_med,Symbol.(1979 .+ collect(1:size(flpn_np_med,2))))
-CSV.write(joinpath(out_dir, "post_process","price","$(flood_year)_model_outcome_flpn_avg_price_norm_med.csv"), med_np_df)
+CSV.write(joinpath(price_dir,"$(flood_year)_model_outcome_flpn_avg_price_norm_med.csv"), med_np_df)
 high_np_df = DataFrame(flpn_np_high,Symbol.(1979 .+ collect(1:size(flpn_np_high,2))))
-CSV.write(joinpath(out_dir, "post_process","price","$(flood_year)_model_outcome_flpn_avg_price_norm_high.csv"), high_np_df)
+CSV.write(joinpath(price_dir,"$(flood_year)_model_outcome_flpn_avg_price_norm_high.csv"), high_np_df)
 
 close(h5file)
 

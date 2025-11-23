@@ -31,9 +31,11 @@ end
     using HDF5
 end
 
-
-@everywhere include(joinpath(dirname(@__DIR__),"src/data_collect.jl"))
-@everywhere include("shap_functions.jl")
+@everywhere begin 
+    include(joinpath(dirname(@__DIR__),"src","data_include.jl"))
+    include(joinpath(dirname(@__DIR__),"src","functions.jl"))
+    include(joinpath(dirname(@__DIR__),"src","data_collect.jl"))
+end
 
 #Load calibrated parameter combinations
 param_path = joinpath(dirname(@__DIR__),"calibration","data/param_comb_final_mean_thresh_6_ens_250.csv")

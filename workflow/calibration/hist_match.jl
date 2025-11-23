@@ -10,7 +10,7 @@ using ProgressMeter
 include(joinpath(dirname(@__DIR__), "src", "functions.jl"))
 
 ##Set constants
-threshold = 10.0 #min 5 max 50
+threshold = 6.0 #min 5 max 50
 max_iterations = 10
 
 params_df_1 = DataFrame(CSV.File(joinpath(@__DIR__, "data/param_comb_initial_135842_ens_250.csv")))

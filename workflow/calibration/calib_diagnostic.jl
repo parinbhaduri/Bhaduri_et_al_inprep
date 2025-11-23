@@ -13,15 +13,18 @@ using CairoMakie
 using StatsPlots
 
 #Read in Data
-RUN_NO = 135842
-par_combs = DataFrame(CSV.File(joinpath(@__DIR__,"data/param_comb_initial_$(RUN_NO).csv")))
-calib_par_combs = DataFrame(CSV.File(joinpath(@__DIR__,"data/param_comb_final_$(RUN_NO)_mean_thresh_5.csv")))
-sim_outputs = DataFrame(CSV.File(joinpath(@__DIR__,"data/calib_sim_output_$(RUN_NO).csv")))
+RUN_NO = 140369 #135842 #144606
+par_combs = DataFrame(CSV.File(joinpath(@__DIR__,"data/param_comb_initial_$(RUN_NO)_ens_250.csv")))
+calib_par_combs = DataFrame(CSV.File(joinpath(@__DIR__,"data/param_comb_final_mean_thresh_6_ens_250.csv"))) #$(RUN_NO)
+#calib_par_combs = DataFrame(CSV.File(joinpath(@__DIR__,"data/test_param_comb_initial_$(RUN_NO)_ens_250.csv")))
+sim_outputs_1 = DataFrame(CSV.File(joinpath(@__DIR__,"data/calib_sim_output_$(RUN_NO).csv")))
+sim_outputs_2 = DataFrame(CSV.File(joinpath(@__DIR__,"data/calib_sim_output_135842.csv")))
+sim_outputs = vcat(sim_outputs_1,sim_outputs_2)
 
 phil_obs = DataFrame(CSV.File(joinpath(dirname(pwd()), "philadelphia-data","model_inputs", "calibration", "phil_obs_df.csv")))
 
 param_cols = ["env_amen_l","price_inc_perc","rhea_coef","base_move",
-"prop_l","prop_m","env_amen_m","risk_averse","build_inc_perc",
+"prop_l","prop_m","env_amen_m","risk_averse","build_inc_perc","flood_mem",
 "env_amen_h","flood_coefficient","penalty","prop_h"]
 
 ### Look at top 10 quantile of highest avg variances
@@ -293,9 +296,9 @@ end
 ### Visualize Calibration Results ###
 calib_sim_outputs = select(innerjoin(sim_outputs, calib_par_combs, on = param_cols), names(sim_outputs))
 calib_low, calib_med, calib_high = calib_spread(;output_df = sim_outputs, calib_df = calib_sim_outputs)
-savefig(calib_low, joinpath(@__DIR__,"diagnostic_plots/output_spread_low_thresh_5.png"))
-savefig(calib_med, joinpath(@__DIR__,"diagnostic_plots/output_spread_med_thresh_5.png"))
-savefig(calib_high, joinpath(@__DIR__,"diagnostic_plots/output_spread_high_thresh_5.png"))
+savefig(calib_low, joinpath(@__DIR__,"diagnostic_plots/output_spread_low_thresh_6.png"))
+savefig(calib_med, joinpath(@__DIR__,"diagnostic_plots/output_spread_med_thresh_6.png"))
+savefig(calib_high, joinpath(@__DIR__,"diagnostic_plots/output_spread_high_thresh_6.png"))
 
 for param_col in param_cols
     p_low, p_high = output_spread(param_col)
