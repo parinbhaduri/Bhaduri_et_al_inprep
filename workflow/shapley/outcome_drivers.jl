@@ -26,7 +26,7 @@ end
     using ProgressMeter
 end
 
-include("shap_functions.jl")
+include(joinpath(dirname(@__DIR__),"src","functions.jl"))
 Random.seed!(1)
 
 EvoTreeRegressor = @load EvoTreeRegressor pkg=EvoTrees 
@@ -36,24 +36,30 @@ out_dir = joinpath(@__DIR__,"data","shap_runs")
 
 param_values = DataFrame(CSV.File(joinpath(dirname(out_dir),"shap_DESKTOP","param_runs_shap.csv")))
 
+##Define outcome and hazard variables
+outcome = "population"
+haz_size = "High"
+
 haz_cat = DataFrame(CSV.File(joinpath(dirname(pwd()), "philadelphia-data","model_inputs", "phil_flood_hist_categories.csv")))
-fld_extents = zeros(size(param_values,1)*2)
+fld_extents = zeros(size(param_values,1)*3)
 event_idx = 1
-for year in [2011,1996]
+# Record total flood extent within exposed area for each year
+for year in [1989,1996,2011]
     fld_extent = haz_cat[haz_cat.year .== year, :total_extents]
     fld_extents[((event_idx - 1) * size(param_values,1) + 1):(event_idx * size(param_values,1))] .= fld_extent[1]
     event_idx += 1
 end
 
 # Load simulated results for each event 
-out_df = DataFrame(CSV.File(joinpath(out_dir, "post_process","population","2011_model_outcome_flpn_pop_norm_low.csv"))) 
-out_df_2 = DataFrame(CSV.File(joinpath(out_dir, "post_process","population","1996_model_outcome_flpn_pop_norm_low.csv")))
+filtered_files = filter(file -> occursin(r"norm_high.csv$",file), readdir(joinpath(out_dir,"post_process",outcome,haz_size)))
+#out_df = DataFrame(CSV.File(joinpath(out_dir, "post_process","population","2011_model_outcome_flpn_pop_norm_low.csv"))) 
+#out_df_2 = DataFrame(CSV.File(joinpath(out_dir, "post_process","population","1996_model_outcome_flpn_pop_norm_low.csv")))
 
-features = copy(vcat(param_values, param_values))#[idx, :]
+features = copy(vcat(param_values, param_values, param_values))#[idx, :]
 features.fld_extents = fld_extents
 
-targets = copy(vcat(out_df[:,1:21],out_df_2))#[idx, :]
-targets = vcat([CSV.read(file, DataFrame) for file in filtered_files]...)
+#targets = copy(vcat(out_df[:,1:21],out_df_2))#[idx, :]
+targets = vcat([CSV.read(joinpath(out_dir,"post_process",outcome,haz_size,file), DataFrame) for file in filtered_files]...)
 # define function for parallelized Shapley calculation
 @everywhere function predict_var(model, data)
     pred = DataFrame(pop_pred = MLJ.predict(model,data))
@@ -76,7 +82,7 @@ function shapley_reg(yrs, features, targets)
                                 reference = reference,
                                 model = out_reg_mach,
                                 predict_function = predict_var,
-                                sample_size = 10, #100
+                                sample_size = 100, #100
                                 parallel = :samples, 
                                 seed = 1)
          println("Saving Data for Year...")
@@ -91,4 +97,4 @@ end
 
 yrs = 1980:1:2000
 shap_df = shapley_reg(yrs, features, targets)
-CSV.write(joinpath(out_dir, "post_process","shapley_indices","test_2011_shap_indices_flpn_pop_norm_low.csv"), shap_df)
+CSV.write(joinpath(out_dir, "post_process","shapley_indices","$(haz_size)fld_shap_indices_flpn_pop_norm_high.csv"), shap_df)
