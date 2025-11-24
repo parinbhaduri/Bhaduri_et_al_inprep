@@ -45,6 +45,7 @@ haz_size = "High"
 haz_cat = DataFrame(CSV.File(joinpath(dirname(pwd()), "philadelphia-data","model_inputs", "phil_flood_hist_categories.csv")))
 fld_extents = zeros(size(param_values,1)*3)
 
+println("Storing flood extents for each event...")
 # Record total flood extent within exposed area for each year
 for (event_idx,year) in enumerate([1989,1996,2011])
     fld_extent = haz_cat[haz_cat.year .== year, :total_extents]
@@ -55,12 +56,12 @@ end
 filtered_files = filter(file -> occursin(r"norm_high.csv$",file), readdir(joinpath(out_dir,"post_process",outcome,haz_size)))
 #out_df = DataFrame(CSV.File(joinpath(out_dir, "post_process","population","2011_model_outcome_flpn_pop_norm_low.csv"))) 
 #out_df_2 = DataFrame(CSV.File(joinpath(out_dir, "post_process","population","1996_model_outcome_flpn_pop_norm_low.csv")))
-
+println("Loading feature array for each event...")
 features = copy(vcat(param_values, param_values, param_values))#[idx, :]
 features.fld_extents = fld_extents
 
 #targets = copy(vcat(out_df[:,1:21],out_df_2))#[idx, :]
-targets = vcat([CSV.read(joinpath(out_dir,"post_process",outcome,haz_size,file), DataFrame) for file in filtered_files]...)
+#targets = vcat([CSV.read(joinpath(out_dir,"post_process",outcome,haz_size,file), DataFrame) for file in filtered_files]...)
 # define function for parallelized Shapley calculation
 @everywhere function predict_var(model, data)
     pred = DataFrame(pop_pred = MLJ.predict(model,data))
@@ -68,12 +69,15 @@ targets = vcat([CSV.read(joinpath(out_dir,"post_process",outcome,haz_size,file),
 end
 
 # make regression trees and compute Shapley values
-function shapley_reg(yrs, features, targets)
+function shapley_reg(yrs, features, targets_path, filtered_files)
     shap_df = DataFrame(feature_name = names(features))
     @showprogress for yr in yrs
+        # Load only the column needed for this year
+        targets_yr = vcat([CSV.read(joinpath(targets_path, file), DataFrame, 
+                                     select=[Symbol(yr)]) for file in filtered_files]...)
         println("Fitting Tree...")
         out_reg_tree = EvoTreeRegressor(nrounds=200, max_depth=5);
-        out_reg_mach = machine(out_reg_tree, features, targets[:, Symbol(yr)]);
+        out_reg_mach = machine(out_reg_tree, features, targets_yr);
         MLJ.fit!(out_reg_mach, force=true)
 
         explain = copy(features)
@@ -92,10 +96,13 @@ function shapley_reg(yrs, features, targets)
             :shap_effect => (x -> mean(abs.(x))))
         rename!(shap_summary, Dict(:shap_effect_function => Symbol("mean_$(yr)")))
         shap_df = innerjoin(shap_df, shap_summary, on=:feature_name)
+
+        targets_yr = nothing  # Release
+        GC.gc()
     end
     return shap_df
 end
-
+println("Starting Shapley Index calculation...")
 yrs = 1980:1:2000
-shap_df = shapley_reg(yrs, features, targets)
+shap_df = shapley_reg(yrs, features, joinpath(out_dir,"post_process",outcome,haz_size), filtered_files)
 CSV.write(joinpath(out_dir, "post_process","shapley_indices","$(haz_size)_fld_shap_indices_flpn_pop_norm_high.csv"), shap_df)
