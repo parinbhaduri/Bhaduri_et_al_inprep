@@ -107,7 +107,7 @@ for file in abm_data_files
             
     println("Processing $total_rows rows in chunks of $chunk_size")
 
-    #=
+    
     # calculate population trajectories
     println("Starting Population Trajectories...")
     flpn_low = process_pop(pop_dat;var_col=4, subset=true, index=flpn_index)
@@ -133,7 +133,7 @@ for file in abm_data_files
     CSV.write(joinpath(pop_dir,"$(flood_year)_model_outcome_flpn_pop_norm_high.csv"), high_df)
     pop_df = DataFrame(flpn_norm,Symbol.(1979 .+ collect(1:size(flpn_norm,2))))
     CSV.write(joinpath(pop_dir,"$(flood_year)_model_outcome_flpn_pop_norm.csv"), pop_df)
-    =#
+    
     # calculate price trajectories
     println("Starting Price Trajectories...")
     flpn_price_low = process_price(price_dat;var_col=1, subset=true, index=flpn_index)

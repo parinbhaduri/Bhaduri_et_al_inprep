@@ -97,4 +97,4 @@ end
 
 yrs = 1980:1:2000
 shap_df = shapley_reg(yrs, features, targets)
-CSV.write(joinpath(out_dir, "post_process","shapley_indices","$(haz_size)fld_shap_indices_flpn_pop_norm_high.csv"), shap_df)
+CSV.write(joinpath(out_dir, "post_process","shapley_indices","$(haz_size)_fld_shap_indices_flpn_pop_norm_high.csv"), shap_df)
