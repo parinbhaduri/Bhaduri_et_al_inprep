@@ -3,8 +3,8 @@ import Pkg
 Pkg.activate(".")
 Pkg.instantiate()
 
-#using Distributed
-#addprocs(15, exeflags="--project=$(Base.active_project())")
+using Distributed
+addprocs(4, exeflags="--project=$(Base.active_project())")
 using Distributed, SlurmClusterManager
 
 addprocs(SlurmManager())
@@ -74,7 +74,7 @@ function shapley_reg(yrs, features, targets_path, filtered_files)
     @showprogress for yr in yrs
         # Load only the column needed for this year
         targets_yr = vcat([CSV.read(joinpath(targets_path, file), DataFrame, 
-                                     select=[Symbol(yr)]) for file in filtered_files]...)
+                                     select=[Symbol(yr)]) for file in filtered_files]...)[!,1]
         println("Fitting Tree...")
         out_reg_tree = EvoTreeRegressor(nrounds=200, max_depth=5);
         out_reg_mach = machine(out_reg_tree, features, targets_yr);
