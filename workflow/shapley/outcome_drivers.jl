@@ -87,7 +87,7 @@ function shapley_reg(yrs, features, targets_path, filtered_files)
                                 reference = reference,
                                 model = out_reg_mach,
                                 predict_function = predict_var,
-                                sample_size = 100, #100
+                                sample_size = 10, #100
                                 parallel = :samples, 
                                 seed = 1)
          println("Saving Data for Year...")
