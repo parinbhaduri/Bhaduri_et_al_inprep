@@ -24,6 +24,8 @@ end
     using ShapML
     using HDF5
     using ProgressMeter
+    using Agents
+    using CHANCE_C
 end
 
 include(joinpath(dirname(@__DIR__),"src","functions.jl"))
