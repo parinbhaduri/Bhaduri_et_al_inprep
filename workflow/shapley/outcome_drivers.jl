@@ -3,8 +3,8 @@ import Pkg
 Pkg.activate(".")
 Pkg.instantiate()
 
-using Distributed
-addprocs(4, exeflags="--project=$(Base.active_project())")
+#using Distributed
+#addprocs(4, exeflags="--project=$(Base.active_project())")
 using Distributed, SlurmClusterManager
 
 addprocs(SlurmManager())
