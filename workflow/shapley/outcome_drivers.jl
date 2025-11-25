@@ -54,7 +54,7 @@ for (event_idx,year) in enumerate([1989,1996,2011])
 end
 
 # Load simulated results for each event 
-filtered_files = filter(file -> occursin(r"norm_$(agent_cat).csv$",file), readdir(joinpath(out_dir,"post_process",outcome,haz_size)))
+filtered_files = filter(file -> occursin(Regex("norm_$(agent_cat)\\.csv\$"),file), readdir(joinpath(out_dir,"post_process",outcome,haz_size)))
 #out_df = DataFrame(CSV.File(joinpath(out_dir, "post_process","population","2011_model_outcome_flpn_pop_norm_low.csv"))) 
 #out_df_2 = DataFrame(CSV.File(joinpath(out_dir, "post_process","population","1996_model_outcome_flpn_pop_norm_low.csv")))
 println("Loading feature array for each event...")
@@ -107,3 +107,6 @@ println("Starting Shapley Index calculation...")
 yrs = 1980:1:2000
 shap_df = shapley_reg(yrs, features, joinpath(out_dir,"post_process",outcome,haz_size), filtered_files)
 CSV.write(joinpath(out_dir, "post_process","shapley_indices","$(haz_size)_fld_shap_indices_flpn_pop_norm_$(agent_cat).csv"), shap_df)
+
+targets_yr = vcat([CSV.read(joinpath(joinpath(out_dir,"post_process",outcome,haz_size), file), DataFrame, 
+                                     select=[Symbol(yr)]) for file in filtered_files]...)[!,1]
