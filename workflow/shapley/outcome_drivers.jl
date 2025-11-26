@@ -41,7 +41,7 @@ param_values = DataFrame(CSV.File(joinpath(dirname(out_dir),"shap_DESKTOP","para
 ##Define outcome and hazard variables
 outcome = "population"
 haz_size = "High"
-agent_cat = "low"
+agent_cat = "high"
 
 haz_cat = DataFrame(CSV.File(joinpath(dirname(pwd()), "philadelphia-data","model_inputs", "phil_flood_hist_categories.csv")))
 fld_extents = zeros(size(param_values,1)*3)
@@ -107,6 +107,3 @@ println("Starting Shapley Index calculation...")
 yrs = 1980:1:2000
 shap_df = shapley_reg(yrs, features, joinpath(out_dir,"post_process",outcome,haz_size), filtered_files)
 CSV.write(joinpath(out_dir, "post_process","shapley_indices","$(haz_size)_fld_shap_indices_flpn_pop_norm_$(agent_cat).csv"), shap_df)
-
-targets_yr = vcat([CSV.read(joinpath(joinpath(out_dir,"post_process",outcome,haz_size), file), DataFrame, 
-                                     select=[Symbol(yr)]) for file in filtered_files]...)[!,1]
