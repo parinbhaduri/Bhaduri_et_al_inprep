@@ -41,7 +41,7 @@ param_values = DataFrame(CSV.File(joinpath(dirname(out_dir),"shap_DESKTOP","para
 ##Define outcome and hazard variables
 outcome = "population"
 haz_size = "High"
-agent_cat = "high"
+agent_cat = "low"
 
 haz_cat = DataFrame(CSV.File(joinpath(dirname(pwd()), "philadelphia-data","model_inputs", "phil_flood_hist_categories.csv")))
 fld_extents = zeros(size(param_values,1)*3)
