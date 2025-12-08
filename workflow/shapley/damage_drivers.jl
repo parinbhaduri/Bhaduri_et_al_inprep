@@ -26,6 +26,7 @@ end
     using ProgressMeter
     using Agents
     using CHANCE_C
+    using StatsBase
 end
 
 include(joinpath(dirname(@__DIR__),"src","functions.jl"))
@@ -44,9 +45,14 @@ agent_cat = "high"
 # Load simulated results for each event 
 filtered_files = filter(file -> occursin(Regex("burden_$(agent_cat)\\.csv\$"),file), readdir(joinpath(out_dir,"post_process",outcome,haz_size)))
 println("Loading feature array for each event...")
-features = vcat([CSV.read(joinpath(joinpath(out_dir,"post_process",outcome,haz_size), file), DataFrame, 
-                    select=[:model, :DDF]) for file in filtered_files]...
-)
+all_dfs = [CSV.read(joinpath(joinpath(out_dir,"post_process",outcome,haz_size), file), DataFrame, 
+                    select=[:model, :DDF]) 
+           for file in filtered_files]
+
+features = vcat(all_dfs...)
+#Select a subset of features
+sub_ind = sample(1:Int(size(features,1)/2), 1000, replace=false)
+features_explain = vcat([df[sub_ind, :] for df in all_dfs]...)
 
 targets = vcat([CSV.read(joinpath(joinpath(out_dir,"post_process",outcome,haz_size), file), DataFrame, 
                     select=[:value]) for file in filtered_files]...
@@ -54,15 +60,19 @@ targets = vcat([CSV.read(joinpath(joinpath(out_dir,"post_process",outcome,haz_si
 
 haz_cat = DataFrame(CSV.File(joinpath(dirname(pwd()), "philadelphia-data","model_inputs", "phil_flood_hist_categories.csv")))
 fld_extents = zeros(size(features,1))
+fld_extents_explain = zeros(size(features_explain,1))
 
 println("Storing flood extents for each event...")
 # Record total flood extent within exposed area for each year
 for (event_idx,year) in enumerate([1989,2011]) #1996,
     fld_extent = haz_cat[haz_cat.year .== year, :total_extents]
     fld_extents[((event_idx - 1) * Int(size(features,1)/2) + 1):(event_idx * Int(size(features,1)/2))] .= fld_extent[1]
+    fld_extents_explain[((event_idx - 1) * Int(size(features_explain,1)/2) + 1):(event_idx * Int(size(features_explain,1)/2))] .= fld_extent[1]
 end
 
 features.fld_extents = fld_extents
+features_explain.fld_extents = fld_extents_explain
+
 #targets = copy(vcat(out_df[:,1:21],out_df_2))#[idx, :]
 #targets = vcat([CSV.read(joinpath(out_dir,"post_process",outcome,haz_size,file), DataFrame) for file in filtered_files]...)
 # define function for parallelized Shapley calculation
@@ -72,14 +82,14 @@ features.fld_extents = fld_extents
 end
 
 # make regression trees and compute Shapley values
-function shapley_reg(features, target)
+function shapley_reg(features, target, explain)
     shap_df = DataFrame(feature_name = names(features))
     println("Fitting Tree...")
     out_reg_tree = EvoTreeRegressor(nrounds=200, max_depth=5);
     out_reg_mach = machine(out_reg_tree, features, target);
     MLJ.fit!(out_reg_mach, force=true)
-
-    explain = copy(features)
+    
+    #explain = copy(features)
     reference = copy(features)
     println("Calculating Shapley Indices...")
     shap_out = ShapML.shap(explain = explain, 
@@ -99,5 +109,5 @@ function shapley_reg(features, target)
 end
 println("Starting Shapley Index calculation...")
 
-shap_df = shapley_reg(features, targets)
-CSV.write(joinpath(out_dir, "post_process","shapley_indices","$(haz_size)_fld_shap_indices_flpn_burden_$(agent_cat).csv"), shap_df)
+shap_df = shapley_reg(features, targets, features_explain)
+CSV.write(joinpath(out_dir, "post_process","shapley_indices","$(haz_size)_fld_shap_indices_flpn_burden_$(agent_cat)_sub.csv"), shap_df)
