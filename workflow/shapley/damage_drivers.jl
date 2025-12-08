@@ -3,8 +3,8 @@ import Pkg
 Pkg.activate(".")
 Pkg.instantiate()
 
-#using Distributed
-#addprocs(4, exeflags="--project=$(Base.active_project())")
+using Distributed
+addprocs(4, exeflags="--project=$(Base.active_project())")
 using Distributed, SlurmClusterManager
 
 addprocs(SlurmManager())
@@ -59,7 +59,7 @@ println("Storing flood extents for each event...")
 # Record total flood extent within exposed area for each year
 for (event_idx,year) in enumerate([1989,2011]) #1996,
     fld_extent = haz_cat[haz_cat.year .== year, :total_extents]
-    fld_extents[((event_idx - 1) * size(features,1)/2 + 1):(event_idx * size(features,1)/2)] .= fld_extent[1]
+    fld_extents[((event_idx - 1) * Int(size(features,1)/2) + 1):(event_idx * Int(size(features,1)/2))] .= fld_extent[1]
 end
 
 features.fld_extents = fld_extents
