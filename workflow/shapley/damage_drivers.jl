@@ -39,7 +39,7 @@ out_dir = joinpath(@__DIR__,"data","shap_runs")
 ##Define outcome and hazard variables
 outcome = "flood_loss"
 haz_size = "High"
-agent_cat = "low"
+agent_cat = "high"
 
 # Load simulated results for each event 
 filtered_files = filter(file -> occursin(Regex("burden_$(agent_cat)\\.csv\$"),file), readdir(joinpath(out_dir,"post_process",outcome,haz_size)))
