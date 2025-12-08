@@ -50,7 +50,7 @@ features = vcat([CSV.read(joinpath(joinpath(out_dir,"post_process",outcome,haz_s
 
 targets = vcat([CSV.read(joinpath(joinpath(out_dir,"post_process",outcome,haz_size), file), DataFrame, 
                     select=[:value]) for file in filtered_files]...
-)
+)[!,1]
 
 haz_cat = DataFrame(CSV.File(joinpath(dirname(pwd()), "philadelphia-data","model_inputs", "phil_flood_hist_categories.csv")))
 fld_extents = zeros(size(features,1))
