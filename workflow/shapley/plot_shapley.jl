@@ -13,20 +13,20 @@ using StatsPlots
 
 
 ### Load Data ###
-out_dir = joinpath(@__DIR__,"data","shap_runs")
-shap_ind_high = DataFrame(CSV.File(joinpath(out_dir, "post_process","shapley_indices","test_2011_shap_indices_flpn_pop_norm_high.csv")))
-shap_ind_low = DataFrame(CSV.File(joinpath(out_dir, "post_process","shapley_indices","test_2011_shap_indices_flpn_pop_norm_low.csv")))
+out_dir = joinpath(@__DIR__,"data","shap_runs") #"shapley_indices",
+shap_ind_high = DataFrame(CSV.File(joinpath(out_dir, "post_process","High_fld_shap_indices_flpn_pop_norm_high.csv")))
+shap_ind_low = DataFrame(CSV.File(joinpath(out_dir, "post_process","High_fld_shap_indices_flpn_pop_norm_low.csv")))
 
 
 function normalize_shap_groups(shap_ind)
     # assign parameters to groups by subsystem
     groups = Dict(
-        "Flood Risk Perception"    => ["risk_averse", "flood_mem","flood_coefficient"],
+        "Flood Risk Memory and Aversion"    => ["risk_averse", "flood_mem","flood_coefficient"],
         "Housing Market"    => ["price_inc_perc","build_inc_perc","rhea_coef","base_move"],                    
-        "Location Preference"    => ["env_amen_l","env_amen_m","env_amen_h",
+        "Location Amenities"    => ["env_amen_l","env_amen_m","env_amen_h",
                                 "penalty", "prop_l","prop_m","prop_h",
                             ],
-        "Population"    => ["pop_no"],
+        "Initial Population Distribution"    => ["pop_no"],
         "Internal Stochasticity"   => ["seed"],
         #"Damage"   => ["damage_seed"],
         "Flood Hazard"   => ["fld_extents"],
@@ -79,11 +79,11 @@ end
 yrs = collect(range(0,20))
 shap_hi_plot = plot_shapley(yrs,shap_pop_high,group_colors; leg=:outerbottom)
 #Plots.title!("Group Uncertainty Importance: Floodplain Pop.")
-savefig(shap_hi_plot,joinpath(pwd(),"figures","shapley","test_2011_shap_grid_flpn_pop_norm_high_w_leg.png"))
+savefig(shap_hi_plot,joinpath(pwd(),"figures","shapley","High_fld_shap_grid_flpn_pop_norm_high_w_leg.png"))
 
 shap_low_plot = plot_shapley(yrs,shap_pop_low,group_colors; leg=false)
 #Plots.title!("Group Uncertainty Importance: Low Income in Floodplain")
-savefig(shap_low_plot,joinpath(pwd(),"figures","shapley","test_2011_shap_grid_flpn_pop_norm_low.png"))
+savefig(shap_low_plot,joinpath(pwd(),"figures","shapley","High_fld_shap_grid_flpn_pop_norm_low.png"))
 
 #plt = Plots.plot(shap_hi_plot, shap_low_plot,  layout = (1,2), dpi=300, size=(275mmx, 210mmx))
 

@@ -76,8 +76,16 @@ haz_dict = Dict(haz_cat.year .=> haz_cat.category)
 
 out_dir = joinpath(@__DIR__,"data","shap_runs")
 abm_data_files = filter(file -> occursin(r"abm_data.*\.h5$",file), readdir(out_dir))
-
+# Load in flood exposure data
+phil_exp = copy(phil_flood) #located in ~workflow/src/data_include.jl
 phil_damages = DataFrame(CSV.File(joinpath(dirname(pwd()), "philadelphia-data","flood_hazard", "data","phil_flood_dmg_ens.csv")))
+
+dmg_bgs = unique(phil_damages[phil_damages[!,"naccs_loss_2011"] .> 0.0, :bg_id])
+intersect(dmg_bgs,unique(phil_bg.GEOID))
+fl_bgs = phil_exp[(phil_exp.year .== 2011) .& (phil_exp.flood_extent .> 0.0), :GEOID]
+intersect(fl_bgs,unique(phil_bg.GEOID))
+haz_bgs = phil_flood_record[phil_flood_record[!,string(2011)] .> 0.0,"GEOID"]
+exp_bgs = intersect(phil_flood_record.GEOID,dmg_bgs)
 
 for file in abm_data_files
     #filename = "2011_abm_data_142772.h5"
@@ -94,7 +102,7 @@ for file in abm_data_files
     dmg_bgs = unique(phil_damages[phil_damages[!,"naccs_loss_$(flood_year)"] .> 0.0, :bg_id])
     haz_bgs = phil_flood_record[phil_flood_record[!,string(flood_year)] .> 0.0,"GEOID"]
     exp_bgs = intersect(haz_bgs,dmg_bgs)
-    #phil_flood_record[phil_flood_record[!,string(flood_year)] .> 0,"GEOID"]
+    #exp_bgs = phil_flood_record[phil_flood_record[!,string(flood_year)] .> 0.0,"GEOID"]
     
 
     flpn_index = filter(x -> x !== nothing, indexin(exp_bgs, h5file["GEOID"][:]))
@@ -123,7 +131,7 @@ for file in abm_data_files
 
     #Save data 
     println("Saving Population Data...")
-    pop_dir = joinpath(out_dir, "post_process","population",haz_dict[flood_year])
+    pop_dir = joinpath(out_dir, "post_process","population", haz_dict[flood_year])
     mkpath(pop_dir)
     low_df = DataFrame(flpn_norm_low,Symbol.(1979 .+ collect(1:size(flpn_norm_low,2))))
     CSV.write(joinpath(pop_dir,"$(flood_year)_model_outcome_flpn_pop_norm_low.csv"), low_df)
