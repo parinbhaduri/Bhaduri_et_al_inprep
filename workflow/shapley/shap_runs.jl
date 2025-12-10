@@ -171,7 +171,7 @@ for flood_shock in flood_years
         write(file, "n_years", n_years)
         write(file, "price_vars", string.(shap_adata[9:end]))    
     end
-    
+    #=
     # Set up pop shares during shock data file 
     pop_share_file = joinpath(data_dir,"$(flood_shock)_pop_share_data.h5")
 
@@ -194,7 +194,7 @@ for flood_shock in flood_years
         write(file, "n_cat_combo", 9)
             
     end
-     
+    =#
    
     
 
@@ -210,7 +210,7 @@ for flood_shock in flood_years
         log_info("Starting chunk $chunk_idx of $n_chunks (combinations $start_idx to $end_idx)")
 
         # Create a channel to stream results
-        result_channel = RemoteChannel(() -> Channel{Tuple{Int, DataFrame, DataFrame}}(nworkers() * 2)) # 
+        result_channel = RemoteChannel(() -> Channel{Tuple{Int, DataFrame}}(nworkers() * 2)) #, DataFrame
 
         # Async task to save results as they arrive
         save_task = @async begin
@@ -220,11 +220,11 @@ for flood_shock in flood_years
     
             while processed_count < length(chunk_combs)
                 try
-                    idx, sim_df, pop_df = take!(result_channel)
+                    idx, sim_df = take!(result_channel)
                     #idx, sim_df, pop_df = results
                     try  
                         save_model_data!(filename, idx, sim_df, n_agents, n_years+1)
-                        save_pop_share_data!(pop_share_file, idx, pop_df)
+                        #save_pop_share_data!(pop_share_file, idx, pop_df)
                         valid_count += 1
                     catch e
                         log_error("Error saving result $idx: $(sprint(showerror, e))")
@@ -255,8 +255,8 @@ for flood_shock in flood_years
         # Run simulations
         ProgressMeter.progress_pmap(enumerate(chunk_combs); progress) do (i, comb)
             try
-                sim_df, pop_df = run_shap_single(comb, output_params, PhilPopABM; adata=shap_adata, n=20, shock=one_shock)
-                put!(result_channel, (start_idx + i - 1, sim_df, pop_df))
+                sim_df, pop_df = run_shap_single(comb, output_params, PhilPopABM; adata=shap_adata, n=20, shock=repeat_shocks)
+                put!(result_channel, (start_idx + i - 1, sim_df)) #, pop_df
             catch e
                 worker_id = myid()
                 error_message = sprint(showerror, e, catch_backtrace())
