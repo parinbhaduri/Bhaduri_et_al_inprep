@@ -40,29 +40,19 @@ param_values = DataFrame(CSV.File(joinpath(dirname(out_dir),"shap_DESKTOP","para
 
 ##Define outcome and hazard variables
 outcome = "population"
-haz_size = "High"
-agent_cat = "low"
+haz_size = "Medium"
+agent_cats = ["low", "medium", "high"]
 
 haz_cat = DataFrame(CSV.File(joinpath(dirname(pwd()), "philadelphia-data","model_inputs", "phil_flood_hist_categories.csv")))
 fld_extents = zeros(size(param_values,1)*3)
 
 println("Storing flood extents for each event...")
 # Record total flood extent within exposed area for each year
-for (event_idx,year) in enumerate([1989,1996,2011])
+for (event_idx,year) in enumerate([1981,1991,2018])
     fld_extent = haz_cat[haz_cat.year .== year, :total_extents]
     fld_extents[((event_idx - 1) * size(param_values,1) + 1):(event_idx * size(param_values,1))] .= fld_extent[1]
 end
 
-# Load simulated results for each event 
-filtered_files = filter(file -> occursin(Regex("norm_$(agent_cat)\\.csv\$"),file), readdir(joinpath(out_dir,"post_process",outcome,haz_size)))
-#out_df = DataFrame(CSV.File(joinpath(out_dir, "post_process","population","2011_model_outcome_flpn_pop_norm_low.csv"))) 
-#out_df_2 = DataFrame(CSV.File(joinpath(out_dir, "post_process","population","1996_model_outcome_flpn_pop_norm_low.csv")))
-println("Loading feature array for each event...")
-features = copy(vcat(param_values, param_values, param_values))#[idx, :]
-features.fld_extents = fld_extents
-
-#targets = copy(vcat(out_df[:,1:21],out_df_2))#[idx, :]
-#targets = vcat([CSV.read(joinpath(out_dir,"post_process",outcome,haz_size,file), DataFrame) for file in filtered_files]...)
 # define function for parallelized Shapley calculation
 @everywhere function predict_var(model, data)
     pred = DataFrame(pop_pred = MLJ.predict(model,data))
@@ -103,7 +93,23 @@ function shapley_reg(yrs, features, targets_path, filtered_files)
     end
     return shap_df
 end
-println("Starting Shapley Index calculation...")
-yrs = 1980:1:2000
-shap_df = shapley_reg(yrs, features, joinpath(out_dir,"post_process",outcome,haz_size), filtered_files)
-CSV.write(joinpath(out_dir, "post_process","shapley_indices","$(haz_size)_fld_shap_indices_flpn_pop_norm_$(agent_cat).csv"), shap_df)
+
+# Load simulated results for each event 
+for agent_cat in agent_cats
+    filtered_files = filter(file -> occursin(Regex("norm_$(agent_cat)\\.csv\$"),file), readdir(joinpath(out_dir,"post_process",outcome,haz_size)))
+    #out_df = DataFrame(CSV.File(joinpath(out_dir, "post_process","population","2011_model_outcome_flpn_pop_norm_low.csv"))) 
+    #out_df_2 = DataFrame(CSV.File(joinpath(out_dir, "post_process","population","1996_model_outcome_flpn_pop_norm_low.csv")))
+    println("Loading feature array for each event...")
+    features = copy(vcat(param_values, param_values, param_values))#[idx, :]
+    features.fld_extents = fld_extents
+
+    #targets = copy(vcat(out_df[:,1:21],out_df_2))#[idx, :]
+    #targets = vcat([CSV.read(joinpath(out_dir,"post_process",outcome,haz_size,file), DataFrame) for file in filtered_files]...)
+
+
+
+    println("Starting Shapley Index calculation $(agent_cat)...")
+    yrs = 1980:1:2000
+    shap_df = shapley_reg(yrs, features, joinpath(out_dir,"post_process",outcome,haz_size), filtered_files)
+    CSV.write(joinpath(out_dir, "post_process","shapley_indices","$(haz_size)_fld_shap_indices_flpn_pop_norm_$(agent_cat).csv"), shap_df)
+end
