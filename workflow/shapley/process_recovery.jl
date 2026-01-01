@@ -79,12 +79,12 @@ abm_data_files = filter(file -> occursin(r"abm_data.*\.h5$",file), readdir(out_d
 # Load in flood exposure data
 phil_exp = copy(phil_flood) #located in ~workflow/src/data_include.jl
 phil_damages = DataFrame(CSV.File(joinpath(dirname(pwd()), "philadelphia-data","flood_hazard", "data","phil_flood_dmg_ens.csv")))
-
-dmg_bgs = unique(phil_damages[phil_damages[!,"naccs_loss_2011"] .> 0.0, :bg_id])
+fl_year = 2010
+dmg_bgs = unique(phil_damages[phil_damages[!,"naccs_loss_$(fl_year)"] .> 0.0, :bg_id])
 intersect(dmg_bgs,unique(phil_bg.GEOID))
-fl_bgs = phil_exp[(phil_exp.year .== 2011) .& (phil_exp.flood_extent .> 0.0), :GEOID]
+fl_bgs = phil_exp[(phil_exp.year .== fl_year) .& (phil_exp.flood_extent .> 0.0), :GEOID]
 intersect(fl_bgs,unique(phil_bg.GEOID))
-haz_bgs = phil_flood_record[phil_flood_record[!,string(2011)] .> 0.0,"GEOID"]
+haz_bgs = phil_flood_record[phil_flood_record[!,string(fl_year)] .> 0.0,"GEOID"]
 exp_bgs = intersect(phil_flood_record.GEOID,dmg_bgs)
 
 for file in abm_data_files
@@ -99,13 +99,14 @@ for file in abm_data_files
 
     #Subset to areas with exposed properties 
     flood_year = read(h5file["historical flood year"])
-    dmg_bgs = unique(phil_damages[phil_damages[!,"naccs_loss_$(flood_year)"] .> 0.0, :bg_id])
-    haz_bgs = phil_flood_record[phil_flood_record[!,string(flood_year)] .> 0.0,"GEOID"]
-    exp_bgs = intersect(haz_bgs,dmg_bgs)
-    #exp_bgs = phil_flood_record[phil_flood_record[!,string(flood_year)] .> 0.0,"GEOID"]
+    #dmg_bgs = unique(phil_damages[phil_damages[!,"naccs_loss_$(flood_year)"] .> 0.0, :bg_id])
+    #haz_bgs = phil_flood_record[phil_flood_record[!,string(flood_year)] .> 0.0,"GEOID"]
+    #exp_bgs = intersect(haz_bgs,dmg_bgs)
+    exp_bgs = phil_flood_record[phil_flood_record[!,string(flood_year)] .> 0.0,"GEOID"]
+    price_bgs = phil_flood_record[phil_flood_record[!,string(flood_year)] .> 0.1,"GEOID"]
     
-
     flpn_index = filter(x -> x !== nothing, indexin(exp_bgs, h5file["GEOID"][:]))
+    flpn_price_index = filter(x -> x !== nothing, indexin(price_bgs, h5file["GEOID"][:]))
 
     println("Collecting Recovery Data for Flood Event $(flood_year)")
 
@@ -115,7 +116,7 @@ for file in abm_data_files
             
     println("Processing $total_rows rows in chunks of $chunk_size")
 
-    
+    #=
     # calculate population trajectories
     println("Starting Population Trajectories...")
     flpn_low = process_pop(pop_dat;var_col=4, subset=true, index=flpn_index)
@@ -141,12 +142,12 @@ for file in abm_data_files
     CSV.write(joinpath(pop_dir,"$(flood_year)_model_outcome_flpn_pop_norm_high.csv"), high_df)
     pop_df = DataFrame(flpn_norm,Symbol.(1979 .+ collect(1:size(flpn_norm,2))))
     CSV.write(joinpath(pop_dir,"$(flood_year)_model_outcome_flpn_pop_norm.csv"), pop_df)
-    
+    =#
     # calculate price trajectories
     println("Starting Price Trajectories...")
-    flpn_price_low = process_price(price_dat;var_col=1, subset=true, index=flpn_index)
-    flpn_price_med = process_price(price_dat;var_col=2, subset=true, index=flpn_index)
-    flpn_price_high = process_price(price_dat;var_col=3, subset=true, index=flpn_index)
+    flpn_price_low = process_price(price_dat;var_col=1, subset=true, index=flpn_price_index)
+    flpn_price_med = process_price(price_dat;var_col=2, subset=true, index=flpn_price_index)
+    flpn_price_high = process_price(price_dat;var_col=3, subset=true, index=flpn_price_index)
 
     flpn_np_low = normal_set(flpn_price_low)
     flpn_np_med = normal_set(flpn_price_med)
