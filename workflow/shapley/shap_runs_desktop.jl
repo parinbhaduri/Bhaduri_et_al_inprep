@@ -40,10 +40,10 @@ end
 #Load calibrated parameter combinations
 param_path = joinpath(dirname(@__DIR__),"calibration","data/param_comb_final_mean_thresh_6_ens_250.csv")
 calib_combs = DataFrame(CSV.File(param_path))[:,1:14]
-
+#=
 #Load flood hazard categories
 haz_cat = DataFrame(CSV.File(joinpath(dirname(pwd()), "philadelphia-data","model_inputs", "phil_flood_hist_categories.csv")))
-#=
+
 events = combine(groupby(haz_cat, "category")) do group
     # Find indices for min and max flood extents
     min_idx = argmin(group.total_extents)
@@ -63,7 +63,7 @@ events = combine(groupby(haz_cat, "category")) do group
     )
 end
 =#
-flood_years = [2011,1989,1996]#,1991,2018,1987] #vcat(events.year_min,events.year_med, events.year_max)
+flood_years = [1981, 1991, 2018] #vcat(events.year_min,events.year_med, events.year_max)
 one_shock = true
 repeat_shocks = false
 
