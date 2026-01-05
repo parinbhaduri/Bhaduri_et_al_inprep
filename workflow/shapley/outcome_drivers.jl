@@ -40,7 +40,7 @@ param_values = DataFrame(CSV.File(joinpath(dirname(out_dir),"shap_DESKTOP","para
 
 ##Define outcome and hazard variables
 outcome = "price"
-haz_size = "High"
+haz_size = "Medium"
 agent_cats = ["low", "high", "med"] 
 
 haz_cat = DataFrame(CSV.File(joinpath(dirname(pwd()), "philadelphia-data","model_inputs", "phil_flood_hist_categories.csv")))
@@ -48,7 +48,7 @@ fld_extents = zeros(size(param_values,1)*3)
 
 println("Storing flood extents for each event...")
 # Record total flood extent within exposed area for each year
-for (event_idx,year) in enumerate([1989,1996,2011])
+for (event_idx,year) in enumerate([1981,1991,2018])
     fld_extent = haz_cat[haz_cat.year .== year, :total_extents]
     fld_extents[((event_idx - 1) * size(param_values,1) + 1):(event_idx * size(param_values,1))] .= fld_extent[1]
 end
