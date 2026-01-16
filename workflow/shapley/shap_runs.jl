@@ -65,7 +65,7 @@ events = combine(groupby(haz_cat, "category")) do group
     )
 end
 =#
-flood_years = [1991,2018,1981] #vcat(events.year_min,events.year_med, events.year_max)
+flood_years = [1982,2010,2013,1988] #vcat(events.year_min,events.year_med, events.year_max)
 one_shock = true
 repeat_shocks = false
 
