@@ -39,7 +39,7 @@ out_dir = joinpath(@__DIR__,"data","shap_runs")
 param_values = DataFrame(CSV.File(joinpath(dirname(out_dir),"shap_DESKTOP","param_runs_shap.csv")))
 
 ##Define outcome and hazard variables
-outcome = "population"
+outcome = "price"
 haz_size = "Low" #"High, "Medium" or "Low"
 agent_cats = ["low", "high","med"] #
 
@@ -111,5 +111,5 @@ for agent_cat in agent_cats
     println("Starting Shapley Index calculation $(agent_cat)...")
     yrs = 1980:1:2000
     shap_df = shapley_reg(yrs, features, joinpath(out_dir,"post_process",outcome,haz_size), filtered_files)
-    CSV.write(joinpath(out_dir, "post_process","shapley_indices","$(haz_size)_fld_shap_indices_flpn_pop_norm_$(agent_cat).csv"), shap_df)
+    CSV.write(joinpath(out_dir, "post_process","shapley_indices","$(haz_size)_fld_shap_indices_flpn_price_norm_$(agent_cat).csv"), shap_df)
 end
