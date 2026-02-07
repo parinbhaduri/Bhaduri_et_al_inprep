@@ -99,7 +99,7 @@ for agent_cat in agent_cats
         m = match(r"(\d{4})", string.(Parquet2.filelist(ds))[f])
         fl_year = parse(Int,m.match)
         event_samples = factor_samples.matrix[factor_samples.matrix.year .== Float64(fl_year),:]
-        event_df = innerjoin(t_df, event_samples, on = [:model, :DDF])
+        event_df = innerjoin(df, event_samples, on = [:model, :DDF])
 
         # Record total flood extent within exposed area for each year
         dmg_bgs = unique(phil_damages[phil_damages[!,"naccs_loss_$(fl_year)"] .> 0.0, :bg_id])
