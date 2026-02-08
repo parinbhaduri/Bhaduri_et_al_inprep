@@ -44,9 +44,9 @@ phil_damages = DataFrame(CSV.File(joinpath(dirname(pwd()), "philadelphia-data","
 phil_exp = DataFrame(CSV.File(joinpath(dirname(pwd()), "philadelphia-data","model_inputs", "phil_flood_hist_year.csv")))
 
 ##Define outcome and hazard variables
-haz_size = "High"
+haz_size = "Medium"
 agent_cats = ["low","high","med"]
-event_years = [1989,1996,2011] #High: [1989,1996,2011], Medium: [1981,1991,2018], Low: [1988,2010,2013]
+event_years = [1981,1991,2018] #High: [1989,1996,2011], Medium: [1981,1991,2018], Low: [1988,2010,2013]
 #Select a random subsample of features
 DOE = DesignDistribution((year = CategoricalFactor(event_years), model = DiscreteUniform(1, 159500), DDF = DiscreteUniform(1, 500)))
 factor_samples = rand(DOE, 159500*3)
