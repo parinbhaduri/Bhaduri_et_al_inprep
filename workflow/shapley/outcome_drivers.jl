@@ -37,21 +37,16 @@ EvoTreeRegressor = @load EvoTreeRegressor pkg=EvoTrees
 out_dir = joinpath(@__DIR__,"data","shap_runs")
 
 param_values = DataFrame(CSV.File(joinpath(dirname(out_dir),"shap_DESKTOP","param_runs_shap.csv")))
+transform!(param_values, ["pop_no","seed"] .=> categorical, renamecols=false) #Set population dist and seed value cols as categorical
 
 ##Define outcome and hazard variables
-outcome = "price"
-haz_size = "Low" #"High, "Medium" or "Low"
-agent_cats = ["low", "high","med"] #
+outcome = "population" #metric is "population" or "price"
+file_out = "pop" #outcome label in file "pop" or "price"
+haz_size = "High" #"High, "Medium" or "Low"
+#event_years = [1988,2010,2013] #High: [1989,1996,2011], Medium: [1981,1991,2018], Low: [1988,2010,2013]
+agent_cats = ["low", "high"] #,"med"
 
 haz_cat = DataFrame(CSV.File(joinpath(dirname(pwd()), "philadelphia-data","model_inputs", "phil_flood_hist_categories.csv")))
-fld_extents = zeros(size(param_values,1)*3)
-
-println("Storing flood extents for each event...")
-# Record total flood extent within exposed area for each year
-for (event_idx,year) in enumerate([1988,2010,2013])
-    fld_extent = haz_cat[haz_cat.year .== year, :total_extents]
-    fld_extents[((event_idx - 1) * size(param_values,1) + 1):(event_idx * size(param_values,1))] .= fld_extent[1]
-end
 
 # define function for parallelized Shapley calculation
 @everywhere function predict_var(model, data)
@@ -97,6 +92,14 @@ end
 # Load simulated results for each event 
 for agent_cat in agent_cats
     filtered_files = filter(file -> occursin(Regex("norm_$(agent_cat)\\.csv\$"),file), readdir(joinpath(out_dir,"post_process",outcome,haz_size)))
+    println("Storing flood extents for each event...")
+    # Record total flood extent within exposed area for each year
+    fld_extents = mapreduce(vcat,filtered_files) do file
+        m = match(r"(\d{4})", file)
+        fl_year = parse(Int,m.match)
+        fld_extent = haz_cat[haz_cat.year .== fl_year, :total_extents]
+        return repeat([fld_extent[1]],size(param_values,1))
+    end
     #out_df = DataFrame(CSV.File(joinpath(out_dir, "post_process","population","2011_model_outcome_flpn_pop_norm_low.csv"))) 
     #out_df_2 = DataFrame(CSV.File(joinpath(out_dir, "post_process","population","1996_model_outcome_flpn_pop_norm_low.csv")))
     println("Loading feature array for each event...")
@@ -111,5 +114,5 @@ for agent_cat in agent_cats
     println("Starting Shapley Index calculation $(agent_cat)...")
     yrs = 1980:1:2000
     shap_df = shapley_reg(yrs, features, joinpath(out_dir,"post_process",outcome,haz_size), filtered_files)
-    CSV.write(joinpath(out_dir, "post_process","shapley_indices","$(haz_size)_fld_shap_indices_flpn_price_norm_$(agent_cat).csv"), shap_df)
+    CSV.write(joinpath(out_dir, "post_process","shapley_indices","$(haz_size)_fld_shap_indices_flpn_$(file_out)_norm_$(agent_cat).csv"), shap_df)
 end
