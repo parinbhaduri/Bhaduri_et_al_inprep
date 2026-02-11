@@ -26,6 +26,7 @@ end
     using ProgressMeter
     using Agents
     using CHANCE_C
+    using CategoricalArrays
 end
 
 include(joinpath(dirname(@__DIR__),"src","functions.jl"))
