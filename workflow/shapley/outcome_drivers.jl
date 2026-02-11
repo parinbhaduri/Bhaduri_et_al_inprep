@@ -41,8 +41,8 @@ param_values = DataFrame(CSV.File(joinpath(dirname(out_dir),"shap_DESKTOP","para
 transform!(param_values, ["pop_no","seed"] .=> categorical, renamecols=false) #Set population dist and seed value cols as categorical
 
 ##Define outcome and hazard variables
-outcome = "population" #metric is "population" or "price"
-file_out = "pop" #outcome label in file "pop" or "price"
+outcome = "price" #metric is "population" or "price"
+file_out = "price" #outcome label in file "pop" or "price"
 haz_size = "High" #"High, "Medium" or "Low"
 #event_years = [1988,2010,2013] #High: [1989,1996,2011], Medium: [1981,1991,2018], Low: [1988,2010,2013]
 agent_cats = ["low", "high"] #,"med"
