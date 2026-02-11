@@ -99,7 +99,7 @@ for agent_cat in agent_cats
         #Add Event Year
         m = match(r"(\d{4})", string.(Parquet2.filelist(ds))[f])
         fl_year = parse(Int,m.match)
-        sampled_data.year = fl_year
+        sampled_data.year .= fl_year
         #=
         event_samples = factor_samples.matrix[factor_samples.matrix.year .== Float64(fl_year),:]
         event_df = innerjoin(df, event_samples, on = [:model, :DDF])
