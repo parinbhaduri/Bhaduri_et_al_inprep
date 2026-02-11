@@ -28,8 +28,7 @@ end
     using CHANCE_C
     using StatsBase
     using Parquet2
-    using ExperimentalDesign
-    using Distributions
+    using CategoricalArrays
 end
 
 include(joinpath(dirname(@__DIR__),"src","functions.jl"))
@@ -44,13 +43,9 @@ phil_damages = DataFrame(CSV.File(joinpath(dirname(pwd()), "philadelphia-data","
 phil_exp = DataFrame(CSV.File(joinpath(dirname(pwd()), "philadelphia-data","model_inputs", "phil_flood_hist_year.csv")))
 
 ##Define outcome and hazard variables
-haz_size = "Medium"
+haz_size = "High"
 agent_cats = ["low","high","med"]
-event_years = [1981,1991,2018] #High: [1989,1996,2011], Medium: [1981,1991,2018], Low: [1988,2010,2013]
-#Select a random subsample of features
-DOE = DesignDistribution((year = CategoricalFactor(event_years), model = DiscreteUniform(1, 159500), DDF = DiscreteUniform(1, 500)))
-factor_samples = rand(DOE, 159500*3)
-factor_samples.matrix.year = Float64.(factor_samples.matrix.year)
+#event_years = [1981,1991,2018] #High: [1989,1996,2011], Medium: [1981,1991,2018], Low: [1988,2010,2013]
 
 # define function for parallelized Shapley calculation
 @everywhere function predict_var(model, data)
@@ -96,8 +91,16 @@ for agent_cat in agent_cats
         append!(ds, f)
         df = ds[i] |> Parquet2.select(:model, :DDF, :burden_value) |> DataFrame
         #Subset to sampled features
+        sort!(df, :burden_value)
+        n = size(df,1)
+        # Select indices that span the entire data range 
+        indices = range(1, n, length=159500) |> x -> round.(Int, x)
+        sampled_data = df[indices,:]
+        #Add Event Year
         m = match(r"(\d{4})", string.(Parquet2.filelist(ds))[f])
         fl_year = parse(Int,m.match)
+        sampled_data.year = fl_year
+        #=
         event_samples = factor_samples.matrix[factor_samples.matrix.year .== Float64(fl_year),:]
         event_df = innerjoin(df, event_samples, on = [:model, :DDF])
 
@@ -105,10 +108,11 @@ for agent_cat in agent_cats
         dmg_bgs = unique(phil_damages[phil_damages[!,"naccs_loss_$(fl_year)"] .> 0.0, :bg_id])
         event_extent = sum(phil_exp[(phil_exp.year .== fl_year) .& (phil_exp.GEOID .∈ Ref(dmg_bgs)), :flood_extent])
         replace!(event_df.year, fl_year => event_extent)
-        return event_df
+        =#
+        return sampled_data
     end
 
-    features = select(all_dfs, Not(:burden_value))
+    features = transform!(select(all_dfs, Not(:burden_value)), All() .=> categorical, renamecols=false)
     targets = select(all_dfs, :burden_value)[!,1]
 
     println("Starting Shapley Index calculation...")
