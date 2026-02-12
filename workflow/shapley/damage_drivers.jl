@@ -40,7 +40,13 @@ out_dir = joinpath(@__DIR__,"data","shap_runs")
 
 # Load Damage and Flood Extent estimates
 phil_damages = DataFrame(CSV.File(joinpath(dirname(pwd()), "philadelphia-data","flood_hazard", "data","phil_flood_dmg_ens.csv")))
+phil_damages.sow_ind .+= 1 #Align with :DDF 
 phil_exp = DataFrame(CSV.File(joinpath(dirname(pwd()), "philadelphia-data", "model_inputs", "phil_flood_hist_year.csv")))
+
+#
+study_bg_file = h5open(joinpath(out_dir,"post_process","flood_loss","study_bg_data.h5"), "r")
+bg_dat = study_bg_file["bg_data"]
+study_GEOIDs = study_bg_file["GEOID"][:]
 
 # Load Model parameter values
 param_values = DataFrame(CSV.File(joinpath(dirname(out_dir),"shap_DESKTOP","param_runs_shap.csv")))
@@ -49,7 +55,7 @@ param_values.row_num = 1:nrow(param_values)
 
 ##Define outcome and hazard variables
 haz_size = "High"
-agent_cats = ["low","high","med"] #
+agent_cats = ["low","med","high"] #
 #= Test
 ds = Parquet2.Dataset(joinpath(out_dir, "post_process","flood_loss",haz_size))
 filtered_files = findall(file -> occursin(Regex("loss_$(agent_cats[1])"),file), string.(Parquet2.filelist(ds)))
@@ -57,7 +63,7 @@ filtered_files = findall(file -> occursin(Regex("loss_$(agent_cats[1])"),file), 
 append!(ds, filtered_files[1])
 df = ds[1] |> Parquet2.select(:model, :DDF, :burden_value) |> DataFrame
 # Join with param values
-df = select(innerjoin(param_values,df, on = :row_num => :model), Not(:row_num))
+df = innerjoin(param_values,df, on = :row_num => :model)
 # Rank damage realizations by total value
 m = match(r"(\d{4})", string.(Parquet2.filelist(ds))[filtered_files[1]]) #Extract Event Year
 fl_year = parse(Int,m.match)
@@ -66,7 +72,21 @@ sort!(tot_dam,:total_damages)
 tot_dam.DDF_order = collect(1:nrow(tot_dam)) ./ nrow(tot_dam)
 
 df = innerjoin(df,tot_dam, on = :DDF => :sow_ind)
-select!(df, Not([:DDF,:total_damages]))
+
+dmg_bgs = unique(phil_damages[phil_damages[!,"naccs_loss_$(fl_year)"] .> 0.0, :bg_id])
+bg_ind = filter(!isnothing,indexin(dmg_bgs,study_GEOIDs))
+total_pop = zeros(size(bg_dat,1))
+for ind in bg_ind
+    total_pop .+= bg_dat[:,ind,1+6]
+end
+event_pop = DataFrame(:row_num => 1:length(total_pop), :total_pop => total_pop)
+df = innerjoin(df,event_pop, on = :row_num)
+tot_pop = combine(groupby(select(df, [:seed,:total_pop]),:seed), :total_pop => mean => :total_pop) #calculate avg population grouped by seed value
+sort!(tot_pop,:total_pop)
+tot_pop.seed_order = collect(1:nrow(tot_pop)) ./ nrow(tot_pop) #Create normalized ordering for each realization
+
+df = innerjoin(df,select(tot_pop,[:seed,:seed_order]), on = :seed)
+select!(df, Not([:row_num, :DDF,:total_damages, :total_pop, :seed]))
  # Calculate mean burden for each seed value 
 target_means = combine(groupby(df, :seed), 
                 :burden_value => mean => :encoded_seed
@@ -99,7 +119,7 @@ function shapley_reg(features, target)
     out_reg_tree = EvoTreeRegressor(nrounds=200, max_depth=5);
     out_reg_mach = machine(out_reg_tree, features, target);
     MLJ.fit!(out_reg_mach, force=true)
-    
+    #=
     explain = copy(features)
     reference = copy(features)
     println("Calculating Shapley Indices...")
@@ -117,12 +137,12 @@ function shapley_reg(features, target)
     rename!(shap_summary, Dict(:shap_effect_function => Symbol("mean_shap")))
     #shap_df = innerjoin(shap_df, shap_summary, on=:feature_name)
     return shap_summary
-    
+    =#
 end
 
 
 
-for agent_cat in agent_cats
+for (i,agent_cat) in enumerate(agent_cats)
     # Load simulated results for each event 
     println("Starting shap analysis for $(agent_cat) income group...")
     println("Loading feature array for each event...")
@@ -141,10 +161,24 @@ for agent_cat in agent_cats
         tot_dam.DDF_order = collect(1:nrow(tot_dam)) ./ nrow(tot_dam) #Create normalized ordering for each realization
 
         df = innerjoin(df,tot_dam, on = :DDF => :sow_ind)
-        
-        
-        
-        select!(df, Not([:row_num, :DDF, :total_damages]))
+        # Rank seed realizations by total pop
+        #First, calculate total pop
+        dmg_bgs = unique(phil_damages[phil_damages[!,"naccs_loss_$(fl_year)"] .> 0.0, :bg_id])
+        bg_ind = filter(!isnothing,indexin(dmg_bgs,study_GEOIDs))
+        total_pop = zeros(size(bg_dat,1))
+        for ind in bg_ind
+            total_pop .+= bg_dat[:,ind,i+6]
+        end
+        event_pop = DataFrame(:row_num => 1:length(total_pop), :total_pop => total_pop)
+        df = innerjoin(df,event_pop, on = :row_num)
+        tot_pop = combine(groupby(select(df, [:seed,:total_pop]),:seed), :total_pop => mean => :total_pop) #calculate avg population grouped by seed value
+        sort!(tot_pop,:total_pop)
+        tot_pop.seed_order = collect(1:nrow(tot_pop)) ./ nrow(tot_pop) #Create normalized ordering for each realization
+
+        df = innerjoin(df,select(tot_pop,[:seed,:seed_order]), on = :seed)
+
+        #Remove Extra Columns
+        select!(df, Not([:row_num, :DDF, :total_damages, :total_pop, :seed]))
         #Subset to sampled features
         sort!(df, :burden_value)
         n = size(df,1)
@@ -152,7 +186,7 @@ for agent_cat in agent_cats
         indices = range(1, n, length=159500) |> x -> round.(Int, x)
         sampled_data = df[indices,:]
 
-        # Calculate mean burden for each seed value 
+        #= Calculate mean burden for each seed value 
         target_means = combine(groupby(sampled_data, :seed), 
                         :burden_value => mean => :encoded_seed
         )
@@ -160,9 +194,8 @@ for agent_cat in agent_cats
         sampled_data = leftjoin(sampled_data, target_means, on=:seed)
         disallowmissing!(sampled_data, :encoded_seed)
         select!(sampled_data, Not([:seed]))
-
+        =#
         # Record total flood extent within exposed area for each year
-        dmg_bgs = unique(phil_damages[phil_damages[!,"naccs_loss_$(fl_year)"] .> 0.0, :bg_id])
         event_extent = sum(phil_exp[(phil_exp.year .== fl_year) .& (phil_exp.GEOID .∈ Ref(dmg_bgs)), :flood_extent])
         sampled_data.fld_extent .= event_extent
         
