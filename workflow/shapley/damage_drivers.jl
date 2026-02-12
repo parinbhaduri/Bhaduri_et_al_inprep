@@ -119,7 +119,7 @@ function shapley_reg(features, target)
     out_reg_tree = EvoTreeRegressor(nrounds=200, max_depth=5);
     out_reg_mach = machine(out_reg_tree, features, target);
     MLJ.fit!(out_reg_mach, force=true)
-    #=
+    
     explain = copy(features)
     reference = copy(features)
     println("Calculating Shapley Indices...")
@@ -137,7 +137,7 @@ function shapley_reg(features, target)
     rename!(shap_summary, Dict(:shap_effect_function => Symbol("mean_shap")))
     #shap_df = innerjoin(shap_df, shap_summary, on=:feature_name)
     return shap_summary
-    =#
+    
 end
 
 
@@ -206,7 +206,7 @@ for (i,agent_cat) in enumerate(agent_cats)
     targets = select(all_dfs, :burden_value)[!,1]
 
     println("Starting Shapley Index calculation...")
-    GC.gc()
+    
     shap_df = shapley_reg(features, targets)
     CSV.write(joinpath(out_dir, "post_process","shapley_indices","$(haz_size)_fld_shap_indices_flpn_burden_$(agent_cat).csv"), shap_df)
     GC.gc()
