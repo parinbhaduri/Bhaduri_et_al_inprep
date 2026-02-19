@@ -151,7 +151,7 @@ end
 ##Define outcome and hazard variables
 haz_sizes = ["High", "Medium", "Low"]
 agent_cats = ["low","med","high", "total"] #
-
+outcome = "loss" #"burden" or "loss"
 for haz_size in haz_sizes
     println("Starting $(haz_size) Hazard Events...")
     for (cat,agent_cat) in enumerate(agent_cats)
@@ -166,7 +166,7 @@ for haz_size in haz_sizes
         end
         all_dfs = mapreduce(vcat, enumerate(filtered_files)) do (i,f)
             append!(ds, f)
-            df = ds[i] |> Parquet2.select(:model, :DDF, :burden_value) |> DataFrame
+            df = ds[i] |> Parquet2.select(:model, :DDF, Symbol("$(outcome)_value")) |> DataFrame
             # Join with param values
             df = innerjoin(param_values,df, on = :row_num => :model)
             # Rank damage realizations by total value
@@ -200,7 +200,7 @@ for haz_size in haz_sizes
             #Remove Extra Columns
             select!(df, Not([:row_num, :DDF, :total_damages, :total_pop, :seed]))
             #Subset to sampled features
-            sort!(df, :burden_value)
+            sort!(df, Symbol("$(outcome)_value"))
             n = size(df,1)
             # Select indices that span the entire data range 
             indices = range(1, n, length=159500) |> x -> round.(Int, x)
@@ -222,13 +222,13 @@ for haz_size in haz_sizes
             return sampled_data
         end
 
-        features = select(all_dfs, Not(:burden_value))
-        targets = select(all_dfs, :burden_value)[!,1]
+        features = select(all_dfs, Not(Symbol("$(outcome)_value")))
+        targets = select(all_dfs, Symbol("$(outcome)_value"))[!,1]
 
         println("Starting Shapley Index calculation...")
         
         shap_df = shapley_reg(features, targets)
-        CSV.write(joinpath(out_dir, "post_process","shapley_indices","$(haz_size)_fld_shap_indices_flpn_burden_$(agent_cat).csv"), shap_df)
+        CSV.write(joinpath(out_dir, "post_process","shapley_indices","$(haz_size)_fld_shap_indices_flpn_$(outcome)_$(agent_cat).csv"), shap_df)
         GC.gc()
     end
 end
