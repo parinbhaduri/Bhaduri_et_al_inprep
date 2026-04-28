@@ -9,10 +9,10 @@ include(joinpath(dirname(@__DIR__), "src", "config_parallel.jl"))
 
 #Create alternate Flood scenarios
 @everywhere begin
-    flood_2011 = init_flood(;ref_year=2011, repeat=false, freq=1)
+    flood_2011 = init_flood(;ref_year=2018, repeat=false, freq=1)
 end
 
-@everywhere function phil_flpn(;flood_rec = phil_flood_record, flood_event_year=2011,flood_shock=true, build_perc = 0.01, price_perc=price_perc, no_of_years=no_of_years, start_year=start_year, seed=seed)
+@everywhere function phil_flpn(;flood_rec = phil_flood_record, flood_event_year=2018,flood_shock=true, build_perc = 0.01, price_perc=price_perc, no_of_years=no_of_years, start_year=start_year, seed=seed)
     model = phil_model(;flood_rec = flood_rec, no_of_years=Int(no_of_years), flood_event_year=flood_event_year,flood_shock=flood_shock, start_year=Int(start_year), build_inc_perc=build_perc, price_inc_perc=price_perc, seed=seed)      
     return model
 end
@@ -48,7 +48,7 @@ param_path = joinpath(dirname(@__DIR__),"calibration","data/param_comb_final_mea
 calib_combs = DataFrame(CSV.File(param_path))[:,1:14]
 p_combs = collect((Tuple(row) for row in eachrow(calib_combs)))
 output_params = collect(Symbol.(names(calib_combs)))
-combs = [(c..., 2011, true) for c in p_combs];
+combs = [(c..., 2018, true) for c in p_combs];
 append!(output_params, [:flood_event_year, :flood_shock])
 
 input_params_dict = Dict(output_params .=> combs[1])
@@ -71,7 +71,7 @@ price_df = combine(groupby(df_price,[:time, :pos]),
 )
 
 #Calculate floodplain characteristics
-exp_bgs = phil_flood_record[phil_flood_record[!,string(2011)] .≥ 0.0,"GEOID"]
+exp_bgs = phil_flood_record[phil_flood_record[!,string(2018)] .≥ 0.0,"GEOID"]
 
 flpn_df = combine(groupby(price_df[price_df.GEOID .∈ Ref(exp_bgs),:],:time),
     Symbol.(shap_price_adata[6:8]) .=> (col -> sum(skipmissing(col))) .=> (string.(shap_price_adata[6:8])),

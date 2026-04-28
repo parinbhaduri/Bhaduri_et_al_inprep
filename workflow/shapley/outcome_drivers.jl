@@ -38,7 +38,7 @@ EvoTreeRegressor = @load EvoTreeRegressor pkg=EvoTrees
 out_dir = joinpath(@__DIR__,"data","shap_runs")
 
 param_values = DataFrame(CSV.File(joinpath(dirname(out_dir),"shap_DESKTOP","param_runs_shap.csv")))
-transform!(param_values, ["pop_no","seed"] .=> categorical, renamecols=false) #Set population dist and seed value cols as categorical
+transform!(param_values, "pop_no" => categorical, renamecols=false) #Set population dist col as categorical
 
 ##Define outcome and hazard variables
 outcome = "price" #metric is "population" or "price"

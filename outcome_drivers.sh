@@ -2,8 +2,9 @@
 #SBATCH --job-name=shap_outcome_drivers
 #SBATCH --mail-user=pbb62@cornell.edu
 #SBATCH --mail-type=ALL
-#SBATCH --nodes=1
-#SBATCH --ntasks-per-node=40
+#SBATCH --nodes=2
+#SBATCH --ntasks-per-node=5
+#SBATCH --mem-per-cpu=15G        # Increase memory per worker
 #SBATCH --output=workflow/shapley/output_text.txt
 #SBATCH --error=workflow/shapley/error_text.txt
 #SBATCH --exclusive

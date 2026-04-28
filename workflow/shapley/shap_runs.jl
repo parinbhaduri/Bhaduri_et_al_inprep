@@ -149,7 +149,7 @@ for flood_shock in flood_years
     filename = joinpath(data_dir,"$(flood_shock)_abm_data.h5")
     n_years = 20
     n_agents = 755
-    #=
+    
     h5open(filename, "w") do file
         # Create datasets with chunking for efficient I/O
         chunk_size = (1, n_agents, n_years+1, 1)
@@ -171,7 +171,7 @@ for flood_shock in flood_years
         write(file, "n_years", n_years)
         write(file, "price_vars", string.(shap_adata[9:end]))   
     end
-    =#
+    
     #=
     # Set up pop shares during shock data file 
     pop_share_file = joinpath(data_dir,"$(flood_shock)_pop_share_data.h5")
@@ -201,7 +201,7 @@ for flood_shock in flood_years
 
     log_info("Processing $n_combs parameter combinations in $n_chunks chunks")
 
-    for chunk_idx in 3:n_chunks
+    for chunk_idx in 1:n_chunks
         
         # Get subset of combinations for this chunk
         start_idx = (chunk_idx - 1) * chunk_size + 1

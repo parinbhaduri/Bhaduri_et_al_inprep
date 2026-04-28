@@ -75,17 +75,20 @@ haz_cat = DataFrame(CSV.File(joinpath(dirname(pwd()), "philadelphia-data","model
 haz_dict = Dict(haz_cat.year .=> haz_cat.category)
 
 out_dir = joinpath(@__DIR__,"data","shap_runs")
-abm_data_files = filter(file -> occursin(r"abm_data.*\.h5$",file), readdir(out_dir))
-# Load in flood exposure data
+abm_data_files = filter(file -> occursin(r"_abm_data.*\.h5$",file), readdir(out_dir))
+#subset further..
+#abm_data_files = filter(s -> any(occursin(t, s) for t in ["1988","2010","2013"]), abm_data_files)
+#= Load in flood exposure data
 phil_exp = copy(phil_flood) #located in ~workflow/src/data_include.jl
 phil_damages = DataFrame(CSV.File(joinpath(dirname(pwd()), "philadelphia-data","flood_hazard", "data","phil_flood_dmg_ens.csv")))
-fl_year = 2010
+fl_year = 2011
 dmg_bgs = unique(phil_damages[phil_damages[!,"naccs_loss_$(fl_year)"] .> 0.0, :bg_id])
 intersect(dmg_bgs,unique(phil_bg.GEOID))
 fl_bgs = phil_exp[(phil_exp.year .== fl_year) .& (phil_exp.flood_extent .> 0.0), :GEOID]
 intersect(fl_bgs,unique(phil_bg.GEOID))
-haz_bgs = phil_flood_record[phil_flood_record[!,string(fl_year)] .> 0.0,"GEOID"]
+haz_bgs = phil_flood_record[phil_flood_record[!,string(fl_year)] .> 0.1,"GEOID"]
 exp_bgs = intersect(phil_flood_record.GEOID,dmg_bgs)
+=#
 
 for file in abm_data_files
     #filename = "2011_abm_data_142772.h5"
@@ -99,12 +102,18 @@ for file in abm_data_files
 
     #Subset to areas with exposed properties 
     flood_year = read(h5file["historical flood year"])
-    #dmg_bgs = unique(phil_damages[phil_damages[!,"naccs_loss_$(flood_year)"] .> 0.0, :bg_id])
-    #haz_bgs = phil_flood_record[phil_flood_record[!,string(flood_year)] .> 0.0,"GEOID"]
-    #exp_bgs = intersect(haz_bgs,dmg_bgs)
-    exp_bgs = phil_flood_record[phil_flood_record[!,string(flood_year)] .> 0.0,"GEOID"]
-    price_bgs = phil_flood_record[phil_flood_record[!,string(flood_year)] .> 0.1,"GEOID"]
-    
+    if flood_year == 1982 #No Flood Year
+        exp_bgs = phil_flood_record[phil_flood_record[!,string(2011)] .> 0.0,"GEOID"]
+        price_bgs = phil_flood_record[phil_flood_record[!,string(2011)] .> 0.1,"GEOID"]
+        haz_size = haz_dict[2011]
+    else
+        #dmg_bgs = unique(phil_damages[phil_damages[!,"naccs_loss_$(flood_year)"] .> 0.0, :bg_id])
+        #haz_bgs = phil_flood_record[phil_flood_record[!,string(flood_year)] .> 0.0,"GEOID"]
+        #exp_bgs = intersect(haz_bgs,dmg_bgs)
+        exp_bgs = phil_flood_record[phil_flood_record[!,string(flood_year)] .> 0.0,"GEOID"]
+        price_bgs = phil_flood_record[phil_flood_record[!,string(flood_year)] .> 0.1,"GEOID"]
+        haz_size = haz_dict[flood_year]
+    end
     flpn_index = filter(x -> x !== nothing, indexin(exp_bgs, h5file["GEOID"][:]))
     flpn_price_index = filter(x -> x !== nothing, indexin(price_bgs, h5file["GEOID"][:]))
 
@@ -116,7 +125,7 @@ for file in abm_data_files
             
     println("Processing $total_rows rows in chunks of $chunk_size")
 
-    #=
+   
     # calculate population trajectories
     println("Starting Population Trajectories...")
     flpn_low = process_pop(pop_dat;var_col=4, subset=true, index=flpn_index)
@@ -132,7 +141,7 @@ for file in abm_data_files
 
     #Save data 
     println("Saving Population Data...")
-    pop_dir = joinpath(out_dir, "post_process","population", haz_dict[flood_year])
+    pop_dir = joinpath(out_dir, "post_process","population", haz_size)
     mkpath(pop_dir)
     low_df = DataFrame(flpn_norm_low,Symbol.(1979 .+ collect(1:size(flpn_norm_low,2))))
     CSV.write(joinpath(pop_dir,"$(flood_year)_model_outcome_flpn_pop_norm_low.csv"), low_df)
@@ -142,7 +151,7 @@ for file in abm_data_files
     CSV.write(joinpath(pop_dir,"$(flood_year)_model_outcome_flpn_pop_norm_high.csv"), high_df)
     pop_df = DataFrame(flpn_norm,Symbol.(1979 .+ collect(1:size(flpn_norm,2))))
     CSV.write(joinpath(pop_dir,"$(flood_year)_model_outcome_flpn_pop_norm.csv"), pop_df)
-    =#
+    
     # calculate price trajectories
     println("Starting Price Trajectories...")
     flpn_price_low = process_price(price_dat;var_col=1, subset=true, index=flpn_price_index)
@@ -155,7 +164,7 @@ for file in abm_data_files
 
     #Save Data
     println("Saving Price Data...")
-    price_dir = joinpath(out_dir, "post_process","price",haz_dict[flood_year])
+    price_dir = joinpath(out_dir, "post_process","price",haz_size)
     mkpath(price_dir)
     low_np_df = DataFrame(flpn_np_low,Symbol.(1979 .+ collect(1:size(flpn_np_low,2))))
     CSV.write(joinpath(price_dir,"$(flood_year)_model_outcome_flpn_avg_price_norm_low.csv"), low_np_df)

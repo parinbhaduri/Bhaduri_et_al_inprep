@@ -10,6 +10,7 @@ include(joinpath(dirname(@__DIR__), "src", "config_parallel.jl"))
 
 param_path = joinpath(dirname(@__DIR__),"calibration","data/param_comb_final_mean_thresh_6_ens_250.csv")
 calib_combs = DataFrame(CSV.File(param_path))[:,1:14]
+shap_params = DataFrame(CSV.File(joinpath(dirname(@__DIR__),"shapley","data/shap_DESKTOP/param_runs_shap.csv")))#[:,1:14]
 p_combs = collect((Tuple(row) for row in eachrow(calib_combs)))
 output_params = collect(Symbol.(names(calib_combs)))
 
@@ -61,13 +62,14 @@ for (i,result) in enumerate(test_results)
     end
 end
 #Calculate floodplain characteristics
-exp_bgs = phil_flood_record[phil_flood_record[!,string(2011)] .≥ 0.01,"GEOID"]
+exp_bgs = phil_flood_record[phil_flood_record[!,string(2011)] .> 0.10,"GEOID"]
 
 flpn_df = combine(groupby(adf[adf.GEOID .∈ Ref(exp_bgs),:],[:seed,:time]),
     Symbol.(shap_price_adata[6:8]) .=> (col -> sum(skipmissing(col))) .=> (string.(shap_price_adata[6:8])),
     Symbol.(shap_price_adata[9:11]) .=> (col -> sum(skipmissing(col))) .=> (string.(shap_price_adata[9:11])),
     Symbol.(shap_price_adata[15:17]) .=> (col -> sum(skipmissing(col))) .=> (string.(shap_price_adata[15:17]))
 )
+
 #Calculate average price
 transform!(flpn_df,
     [:price_low, :cap_low] => ByRow(/) => :price_low_avg,
@@ -104,22 +106,22 @@ summary_df = combine(groupby(flpn_norm, :time),
 
 )
 
-p = plot(xlabel="Time", ylabel="Pop. Percent Change (%)", legend=:best)
+p = Plots.plot(xlabel="Time", ylabel="Pop. Percent Change (%)", legend=:best)
 
 # Column 1
-plot!(summary_df.time, summary_df.hh_low_median, 
+Plots.plot!(summary_df.time, summary_df.hh_low_median, 
     ribbon=(summary_df.hh_low_median .- summary_df.hh_low_lower, 
             summary_df.hh_low_upper .- summary_df.hh_low_median),
     label="Low Income Pop.", linewidth=2, fillalpha=0.3, color=:blue)
 
 # Column 2
-plot!(summary_df.time, summary_df.hh_med_median, 
+Plots.plot!(summary_df.time, summary_df.hh_med_median, 
     ribbon=(summary_df.hh_med_median .- summary_df.hh_med_lower, 
             summary_df.hh_med_upper .- summary_df.hh_med_median),
     label="Middle Income Pop.", linewidth=2, fillalpha=0.3, color=:red)
 
 # Column 3
-plot!(summary_df.time, summary_df.hh_high_median, 
+Plots.plot!(summary_df.time, summary_df.hh_high_median, 
     ribbon=(summary_df.hh_high_median .- summary_df.hh_high_lower, 
             summary_df.hh_high_upper .- summary_df.hh_high_median),
     label="High Income Pop.", linewidth=2, fillalpha=0.3, color=:green)
@@ -128,22 +130,22 @@ display(p)
 
 
 
-p2 = plot(xlabel="Time", ylabel="Price Percent Change (%)", legend=:best)
+p2 = Plots.plot(xlabel="Time", ylabel="Price Percent Change (%)", legend=:best)
 
 # Column 1
-plot!(summary_df.time, summary_df.price_low_median, 
+Plots.plot!(summary_df.time, summary_df.price_low_median, 
     ribbon=(summary_df.price_low_median .- summary_df.price_low_lower, 
             summary_df.price_low_upper .- summary_df.price_low_median),
     label="Low Val. Housing Price", linewidth=2, fillalpha=0.3, color=:blue)
 
 # Column 2
-plot!(summary_df.time, summary_df.price_med_median, 
+Plots.plot!(summary_df.time, summary_df.price_med_median, 
     ribbon=(summary_df.price_med_median .- summary_df.price_med_lower, 
             summary_df.price_med_upper .- summary_df.price_med_median),
     label="Medium Val. Housing Price", linewidth=2, fillalpha=0.3, color=:red)
 
 #Column 3
-plot!(summary_df.time, summary_df.price_high_median, 
+Plots.plot!(summary_df.time, summary_df.price_high_median, 
     ribbon=(summary_df.price_high_median .- summary_df.price_high_lower, 
             summary_df.price_high_upper .- summary_df.price_high_median),
     label="High Val. Housing Price", linewidth=2, fillalpha=0.3, color=:green)
