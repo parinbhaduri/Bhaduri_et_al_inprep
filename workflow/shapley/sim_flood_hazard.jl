@@ -26,29 +26,10 @@ end
 #Load flood hazard categories
 haz_cat = DataFrame(CSV.File(joinpath(dirname(pwd()), "philadelphia-data/model_inputs", "phil_flood_hist_categories.csv")))
 
-events = combine(groupby(haz_cat, "category")) do group
-    # Find indices for min and max flood extents
-    min_idx = argmin(group.total_extents)
-    max_idx = argmax(group.total_extents)
-    
-    # For median, sort and find middle index
-    sorted_indices = sortperm(group.total_extents)
-    median_idx = sorted_indices[div(length(sorted_indices) + 1, 2)]
-    
-    (
-        year_min = group.year[min_idx],
-        year_med = group.year[median_idx],
-        year_max = group.year[max_idx],
-        min_extent = group.total_extents[min_idx],
-        median_extent = group.total_extents[median_idx],
-        max_extent = group.total_extents[max_idx]
-    )
-end
-
-flood_years = vcat(events.year_min,events.year_med, events.year_max)
+flood_years = vcat(2010,2013,1988) #1991,2018,1981,1996,1989,2011
 
 fh_params = Dict(
-    :seed=>1200,
+    :seed=>1300,
     :flood_event_year=>flood_years,
     :risk_averse=>0.7, 
     :flood_mem=>10, 
@@ -67,7 +48,7 @@ fh_params = Dict(
     
 )
 
-adf_intense,_ = paramscan(fh_params, PhilPopABM; parallel=true, showprogress=true, adata=shap_adata, n=39)
+adf_intense,_ = paramscan(fh_params, PhilPopABM; parallel=true, showprogress=true, adata=shap_adata, n=19)
 
 ##Clean Data
 queue_pos = adf_intense[adf_intense.agent_type .== Symbol("CHANCE_C.Queue"),:].pos[1:2]
@@ -90,8 +71,9 @@ flpn_bg_ids = unique(flpn_bgs[flpn_bgs.GEOID .∈ Ref(bgs_2011.GEOID),:].GEOID) 
 =#
 #flpn_index = indexin(flpn_bg_ids, h5file["GEOID"][:])
 #Select floodplain-only BGs. Calculate statistics 
+event_year = 2010
 fdf = combine(groupby(data_df, ["flood_event_year","time"])) do group
-    exp_bgs = phil_flood_record[phil_flood_record[!,string(first(group.flood_event_year))] .> 0,"GEOID"]
+    exp_bgs = phil_flood_record[phil_flood_record[!,string(event_year)] .> 0,"GEOID"]
     flpn = subset(group, "GEOID" => x -> (x .∈ Ref(exp_bgs)))
     (
         flpn_low = sum(flpn.hh_low_sum),
@@ -105,11 +87,11 @@ end
 
 ##Plot results
 #create subsets for hazard categories
-major = flood_years[[3,6,9]]
-medium = flood_years[[2,5,8]]
-minor = flood_years[[1,4,7]]
+#major = flood_years[[3,6,9]]
+#medium = flood_years[[2,5,8]]
+minor = flood_years[[1,2,3]]
 
-function flpn_pop_plot(df, year_set; leg = :outertopright, color = palette(:berlin10), lim = (0,6000), p_lim = (1e5,1e6))
+function flpn_pop_plot(df, year_set; leg = :outertopright, color = palette(:berlin10), lim = (0,12000), p_lim = (1e5,1e6))
     ddf = subset(df, "flood_event_year" => x -> (x .∈ Ref(year_set)))
     ddf.flood_event_year = replace(ddf.flood_event_year, year_set[1] => "min", year_set[2] => "med", year_set[3] => "max") 
 
@@ -140,4 +122,4 @@ med_pop_plots = flpn_pop_plot(dat_df,medium)
 plot(med_pop_plots..., layout=(3, 2), size = (1100, 1000), plot_title = "Flpn. Dynamics with Medium Flood Shock")
 
 min_pop_plots = flpn_pop_plot(dat_df,minor)
-plot(min_pop_plots..., layout=(3, 2), size = (1100, 1000), plot_title = "Flpn. Dynamics with Minor Flood Shock")
+Plots.plot(min_pop_plots..., layout=(3, 2), size = (1100, 1000), plot_title = "Flpn. Dynamics with Minor Flood Shock")

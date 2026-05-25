@@ -76,6 +76,11 @@ haz_dict = Dict(haz_cat.year .=> haz_cat.category)
 
 out_dir = joinpath(@__DIR__,"data","shap_runs")
 abm_data_files = filter(file -> occursin(r"_abm_data.*\.h5$",file), readdir(out_dir))
+
+#Collect details on flood exposed block groups by event year
+println("Number of Exposed Block groups per event: ")
+combine(phil_flood_record, names(phil_flood_record) .=> (x -> count(>(0), x)) .=> names(phil_flood_record))
+
 #subset further..
 #abm_data_files = filter(s -> any(occursin(t, s) for t in ["1988","2010","2013"]), abm_data_files)
 #= Load in flood exposure data

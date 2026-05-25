@@ -14,12 +14,12 @@ using ColorSchemes
 using Random
 
 Random.seed!(1)
-#Subset data by param combination
+#= Subset data by param combination
 param_path = joinpath(dirname(@__DIR__),"calibration","data/param_comb_final_mean_thresh_6_ens_250.csv")
 calib_combs = DataFrame(CSV.File(param_path))[:,1:14]
 calib_combs.pop_no .= [0]
 shap_params = DataFrame(CSV.File(joinpath(dirname(@__DIR__),"shapley","data/shap_DESKTOP/param_runs_shap.csv")))
-
+=#
 
 #Calculate median and 95% intervals
 out_dir = joinpath(@__DIR__,"data","shap_runs")
@@ -155,3 +155,61 @@ display(fig)
 
 
 CairoMakie.save(joinpath(pwd(),"figures", "recovery", "$(fld_year)_pop_recovery_w_box.png"), fig)
+
+
+
+
+### CounterFactual only
+counter_low_med = mapslices(x -> median(skipmissing(x)), Matrix(counter_low), dims=1)
+counter_low_quantiles = mapslices(x -> quantile(skipmissing(x), [0.025, 0.975]), Matrix(counter_low), dims=1)
+counter_hi_med = mapslices(x -> median(skipmissing(x)), Matrix(counter_high), dims=1)
+counter_hi_quantiles = mapslices(x -> quantile(skipmissing(x), [0.025, 0.975]), Matrix(counter_high), dims=1)
+
+
+fig = Figure(size = (1000,750), fontsize = 24, pt_per_unit = 1, figure_padding = 18)
+ga = fig[1, 1] = GridLayout()
+
+ax1 = Axis(ga[1, 1], ylabel = rich("Change in Population (%)";font=:bold), xlabel = rich("Time (years)";font=:bold), #xscale = log10,
+titlesize = 28,  xgridvisible = false) #, titlealign = :center, title = "Change in Population in Exposed Areas" #xticks = ([10,100,1000], string.([10,100,1000])), limits = ((10,1000), nothing),
+CairoMakie.xlims!(ax1, low = 0, high=20)
+
+#Plot uncertainty intervals for population trajectories
+CairoMakie.lines!(ax1, years, vec(counter_hi_med)[1:21], color = hc, linewidth = 3.5)
+#, label = false)
+CairoMakie.band!(ax1, years, counter_hi_quantiles[1,:][1:21], counter_hi_quantiles[2,:][1:21], color = (hc, 0.15))
+
+#CairoMakie.lines!(ax1, years, vec(med_med)[1:21], color = Palette[3], linewidth = 3.5)
+#, label = false)
+#CairoMakie.band!(ax1, years, med_quantiles[1,:][1:21], med_quantiles[2,:][1:21], color = (Palette[3], 0.25))
+
+CairoMakie.lines!(ax1, years, vec(counter_low_med)[1:21], color = lc, linewidth = 3.5)
+#, label = false)
+CairoMakie.band!(ax1, years, counter_low_quantiles[1,:][1:21], counter_low_quantiles[2,:][1:21], color = (lc, 0.15))
+
+#Plot example traces
+for i in random_row_indices
+    CairoMakie.lines!(ax1, years, collect(counter_low[i,1:21]), color = lc, linestyle =:dot, linewidth = 2.0)
+    CairoMakie.lines!(ax1, years, collect(counter_high[i,1:21]), color =  hc, linestyle =:dot, linewidth = 2.0)
+end
+#CairoMakie.lines!(ax1, years, collect(flpn_norm_low[97012,1:21]), color = Palette[4], linestyle =:dot, linewidth = 4.5)
+#CairoMakie.lines!(ax1, years, collect(flpn_norm_high[97012,1:21]), color = Palette[2], linestyle =:dot, linewidth = 4.5)
+#Add Horiz Line at 0
+CairoMakie.hlines!(ax1, 0, color = :black, linecap = :round, xmax = 20, linewidth = 2.5)
+#Add Flood Shock
+CairoMakie.vlines!(ax1, 4, color = :black, linecap = :round, linestyle = :dash, ymax = 0.8, linewidth = 2.5)
+text!(ax1, 4.5, 40, text=rich("Flood Shock Occurrence", font = :italic), align = (:left, :center), fontsize = 22)
+
+#Create Legend
+elem_1 = [PolyElement(color = (lc, 0.5))]
+elem_2 = [PolyElement(color = (hc, 0.5))]
+elem_3 = [LineElement(color = :black, linestyle = :solid, linewidth = 5)]
+elem_4 = [LineElement(color =  :black, linestyle = :dot, linewidth = 5)]
+
+axislegend(ax1, [elem_1, elem_2,  elem_3, elem_4] , ["Low Income", "High Income",  
+        "Median Trajectory", "Individual Trajectory"], nbanks = 2,
+    orientation = :vertical, framevisible = false, labelsize = 26, position = :lt
+) #
+
+
+display(fig)
+CairoMakie.save(joinpath(pwd(),"figures", "recovery", "1982_pop_recovery.png"), fig)

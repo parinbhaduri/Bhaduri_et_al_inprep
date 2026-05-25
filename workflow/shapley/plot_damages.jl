@@ -68,14 +68,14 @@ hidespines!(ax3_events)
 hideydecorations!(ax3_events)
 
 ax3 = Axis(gc[1, 1], ylabel = rich("Total Flood Loss\nDiscrepancy (Million USD)"; font = :bold), xlabel = "",#rich("Year of Event"; font = :bold),
-    yticks = ([0.0,1.0e7,2.0e7,3.0e7], string.([0,10,20,30])), 
+    yticks = ([-2.0e7, -1.0e7,0.0,1.0e7,2.0e7,3.0e7,4.0e7,5.0e7,6.0e7], string.([-20,"",0,"",20,"",40,"",60])), 
     xticks = (collect(1:9), string.(collect(1:9))),#["2010","2013","1988","1981","2018","1991","1996","1989","2011"]),
     xticklabelsize = 20, xlabelsize = 22, xgridvisible = false, xticksvisible = true#, xticklabelsvisible = false,
 ) #
 hidespines!(ax3, :t, :r)
 
 ax4 = Axis(gd[1, 1], ylabel = rich("Total Flood Loss Burden\nDiscrepancy (%)"; font = :bold), xlabel = rich("Flood Event"; font = :bold),
-    yticks = ([-0.20,-0.10,0,0.10,0.20], string.([-20,-10,0,10,20])), 
+    yticks = ([-0.40,-0.30,-0.20,-0.10,0,0.10,], string.([-40,"",-20,"",0,10])), 
     xticks = (collect(1:9), string.(collect(1:9))),#["2010","2013","1988","1981","2018","1991","1996","1989","2011"]),
     xticklabelsize = 20, xlabelsize = 22, xgridvisible = false, xticksvisible = true#, xticklabelsvisible = false,
 ) #
@@ -114,7 +114,7 @@ for (ind,haz_size) in enumerate(["Low", "Medium", "High"])
     sampled_indices_s = range(1, 79750000, length=159500) |> x -> round.(Int, x)
     for year in Haz_Dict[haz_size]
         println("Starting year $(year)...")
-        #First, load damages with no uncertainty
+        #First, load damages with no uncertainty (at time of event)
         dam_file = h5open(joinpath(out_dir, "post_process","flood_loss",haz_size,"$(year)_flood_loss.h5"), "r")
         dam_no_unc = dam_file["no_unc estimates"]
         flpn_loss_no_unc = zeros(size(dam_no_unc,1),3,2)
@@ -132,13 +132,37 @@ for (ind,haz_size) in enumerate(["Low", "Medium", "High"])
                 flpn_loss_no_unc[i:end_idx,inc-3,2] = outcome
             end
         end
-        #Convert no_unc loss to df
+        # Convert no_unc loss to df
         no_unc_df = DataFrame(:no_unc_loss_low => flpn_loss_no_unc[:,1,1],:no_unc_loss_med => flpn_loss_no_unc[:,2,1], :no_unc_loss_high => flpn_loss_no_unc[:,3,1],
                             :no_unc_burd_low => flpn_loss_no_unc[:,1,2],:no_unc_burd_med => flpn_loss_no_unc[:,2,2], :no_unc_burd_high => flpn_loss_no_unc[:,3,2],
                             :model => 1:size(flpn_loss_no_unc,1)
         )
 
-        #Load loss values with uncertainty
+
+        ## Then, load damages with no uncertainty (at initialization) 
+        init_dam_file = h5open(joinpath(out_dir, "post_process","flood_loss",haz_size,"$(year)_init_flood_loss.h5"), "r")
+        init_dam_no_unc = init_dam_file["no_unc estimates"]
+        init_loss_no_unc = zeros(size(init_dam_no_unc,1),3,2)
+        for inc in [4,5,6] 
+            chk = init_dam_no_unc[:,:,inc]
+            price_chk = init_dam_no_unc[:,:,inc-3]
+            loss_sum = dropdims(sum(x -> isnan(x) ? 0 : x, chk, dims=2), dims=2)
+            #Calculate burden
+            tot_price = dropdims(sum(x -> isnan(x) ? 0 : x, price_chk, dims=2), dims=2)
+            outcome = loss_sum ./ tot_price
+            replace!(outcome, NaN => 0) #NaN values occur when no agents exist in area. Assume burden is 0
+            init_loss_no_unc[:,inc-3,1] = loss_sum
+            init_loss_no_unc[:,inc-3,2] = outcome
+            
+        end
+        #Convert no_unc loss to df
+        init_no_unc_df = DataFrame(:no_unc_loss_low => init_loss_no_unc[:,1,1],:no_unc_loss_med => init_loss_no_unc[:,2,1], :no_unc_loss_high => init_loss_no_unc[:,3,1],
+                            :no_unc_burd_low => init_loss_no_unc[:,1,2],:no_unc_burd_med => init_loss_no_unc[:,2,2], :no_unc_burd_high => init_loss_no_unc[:,3,2],
+                            :model => 1:size(init_loss_no_unc,1)
+        )
+        
+
+        ## Load loss values with uncertainty
         ds = Parquet2.Dataset(joinpath(out_dir, "post_process","flood_loss",haz_size))
         filtered_file_high = findfirst(file -> occursin(Regex("$(year)_model_outcome_flpn_loss_high"),file), string.(Parquet2.filelist(ds)))
         append!(ds,filtered_file_high)
@@ -153,23 +177,30 @@ for (ind,haz_size) in enumerate(["Low", "Medium", "High"])
         event_loss_inc_high = innerjoin(event_loss_inc_high, no_unc_df[:,[:no_unc_loss_high, :no_unc_burd_high, :model]], on = :model)
         event_loss_high = sort(vcat(no_unc_df.no_unc_loss_high, event_loss_inc_high.loss_value))
         event_burden_high = sort(vcat(no_unc_df.no_unc_burd_high, event_loss_inc_high.burden_value))
-        event_diff_high = sort(event_loss_inc_high.no_unc_loss_high .- event_loss_inc_high.loss_value)
-        event_diff_burd_high = sort(event_loss_inc_high.no_unc_burd_high .- event_loss_inc_high.burden_value)
-        
+        #event_diff_high = sort(event_loss_inc_high.no_unc_loss_high .- event_loss_inc_high.loss_value)
+        #event_diff_burd_high = sort(event_loss_inc_high.no_unc_burd_high .- event_loss_inc_high.burden_value)
+        event_diff_high = sort(init_no_unc_df.no_unc_loss_high .- event_loss_inc_high.loss_value)
+        event_diff_burd_high = sort(init_no_unc_df.no_unc_burd_high .- event_loss_inc_high.burden_value)
+
         event_loss_inc_med = ds[2] |> Parquet2.select(:model, :loss_value, :burden_value) |> DataFrame
         event_loss_inc_med = innerjoin(event_loss_inc_med, no_unc_df[:,[:no_unc_loss_med, :no_unc_burd_med, :model]], on = :model)
         event_loss_med = sort(vcat(no_unc_df.no_unc_loss_med, event_loss_inc_med.loss_value))
         event_burden_med = sort(vcat(no_unc_df.no_unc_burd_med, event_loss_inc_med.burden_value))
-        event_diff_med = sort(event_loss_inc_med.no_unc_loss_med .- event_loss_inc_med.loss_value)
-        event_diff_burd_med = sort(event_loss_inc_med.no_unc_burd_med .- event_loss_inc_med.burden_value)
+        #event_diff_med = sort(event_loss_inc_med.no_unc_loss_med .- event_loss_inc_med.loss_value)
+        #event_diff_burd_med = sort(event_loss_inc_med.no_unc_burd_med .- event_loss_inc_med.burden_value)
+        event_diff_med = sort(init_no_unc_df.no_unc_loss_med .- event_loss_inc_med.loss_value)
+        event_diff_burd_med = sort(init_no_unc_df.no_unc_burd_med .- event_loss_inc_med.burden_value)
         
         event_loss_low = Parquet2.load(ds[3],"loss_value")
         event_loss_inc_low = ds[3] |> Parquet2.select(:model, :loss_value, :burden_value) |> DataFrame
         event_loss_inc_low = innerjoin(event_loss_inc_low, no_unc_df[:,[:no_unc_loss_low, :no_unc_burd_low, :model]], on = :model)
         event_loss_low = sort(vcat(no_unc_df.no_unc_loss_low, event_loss_inc_low.loss_value))
         event_burden_low = sort(vcat(no_unc_df.no_unc_burd_low, event_loss_inc_low.burden_value))
-        event_diff_low = sort(event_loss_inc_low.no_unc_loss_low .- event_loss_inc_low.loss_value)
-        event_diff_burd_low = sort(event_loss_inc_low.no_unc_burd_low .- event_loss_inc_low.burden_value)
+        #event_diff_low = sort(event_loss_inc_low.no_unc_loss_low .- event_loss_inc_low.loss_value)
+        #event_diff_burd_low = sort(event_loss_inc_low.no_unc_burd_low .- event_loss_inc_low.burden_value)
+        event_diff_low = sort(init_no_unc_df.no_unc_loss_low .- event_loss_inc_low.loss_value)
+        event_diff_burd_low = sort(init_no_unc_df.no_unc_burd_low .- event_loss_inc_low.burden_value)
+        
         
         
         #Add sets to data vectors
@@ -216,8 +247,8 @@ CairoMakie.vlines!(ax4, [3.5,6.5], color = :grey, linecap = :round, linewidth = 
 #Add arrow for extent direction
 text!(ax1, 3.65, 1.6e8, text=rich("smallest to largest flood extent ", font = :italic), align = (:left, :center), fontsize = 18)
 arrows!(ax1, [4.0], [1.5e8], [2.0], [0.0], linewidth=2.0)
-text!(ax3, 3.65, 3.2e7, text=rich("smallest to largest flood extent ", font = :italic), align = (:left, :center), fontsize = 18)
-arrows!(ax3, [4.0], [3.0e7], [2.0], [0.0], linewidth=2.0)
+text!(ax3, 3.65, 4.4e7, text=rich("smallest to largest flood extent ", font = :italic), align = (:left, :center), fontsize = 18)
+arrows!(ax3, [4.0], [4.0e7], [2.0], [0.0], linewidth=2.0)
 #Create Legend
 elem_1 = [PolyElement(color = lc)]
 elem_2 = [PolyElement(color = mc)]
@@ -236,7 +267,7 @@ rowgap!(fig2.layout, 50)
 display(fig1)
 CairoMakie.save(joinpath(pwd(),"figures", "loss", "flpn_flood_loss_abs.png"), fig1)
 display(fig2)
-CairoMakie.save(joinpath(pwd(),"figures", "loss", "flpn_flood_loss_discrep.png"), fig2)
+CairoMakie.save(joinpath(pwd(),"figures", "loss", "flpn_flood_loss_init_discrep.png"), fig2)
 
 
 
